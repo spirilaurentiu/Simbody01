@@ -1262,6 +1262,17 @@ MobilizedBody::Cylinder::Cylinder
                                                    *this);
 }
 
+    // Needed in GMOL - CYL
+    const Vec2& MobilizedBody::Cylinder::getDefaultQ() const {
+        return getImpl().defaultQ;
+    }
+    MobilizedBody::Cylinder& MobilizedBody::Cylinder::setDefaultQ(const Vec2& q) {
+        getImpl().invalidateTopologyCache();
+        updImpl().defaultQ = q;
+        return *this;
+    }
+    // GMOL END - CYL
+
 SimTK_INSERT_DERIVED_HANDLE_DEFINITIONS(MobilizedBody::Cylinder, 
     MobilizedBody::CylinderImpl, MobilizedBody);
 
