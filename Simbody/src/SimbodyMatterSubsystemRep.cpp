@@ -5738,6 +5738,36 @@ void SimbodyMatterSubsystemRep::calcMInv(const State& s, Matrix& MInv) const {
 
 
 
+void SimbodyMatterSubsystemRep::calcMInvSqrt(const State& s, Matrix& MInvSqrt) const {
+    const int nu = getTotalDOF();
+    MInvSqrt.resize(nu,nu);
+    if (nu==0) return;
+
+    // This could probably be calculated faster by doing it directly and
+    // filling in only half. For now we're doing it with repeated calls to
+    // the O(n) operator multiplyByMInvSqrt().
+
+    // If M's columns are contiguous we can avoid copying.
+    const bool isContiguous = MInvSqrt(0).hasContiguousData();
+    Vector contig_col(isContiguous ? 0 : nu);
+
+    Vector f(nu); f.setToZero();
+    for (int i=0; i < nu; ++i) {
+        f[i] = 1;
+        if (isContiguous) {
+            //multiplyBySqrtMInv(s, f, MInvSqrt(i));
+            multiplyBySqrtMInv(s, f, contig_col);
+            MInvSqrt(i) = contig_col;
+        } else {
+            multiplyBySqrtMInv(s, f, contig_col);
+            MInvSqrt(i) = contig_col;
+        }
+        f[i] = 0;
+    }
+}
+
+
+
 //==============================================================================
 //                          CALC TREE RESIDUAL FORCES
 //==============================================================================

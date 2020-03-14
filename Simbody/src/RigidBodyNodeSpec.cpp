@@ -590,33 +590,39 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::multiplyBySqrtMInvPassOutward(
     int i, j, k;
     Mat<dof,dof> sqrtDI(1);
     if(dof>1){
-      double s1, s2;
-      Mat<dof,dof> L(0);
-      Mat<dof,dof> De(0);
+        // Matrix must be copied because LAPACK will overwrite input data.
+        SimTK::Real A[dof * dof];
 
-      for(j=0; j<dof; j++){
-        L(j,j) = 1.0;
-        // Diagonal
-        s1 = 0.0;
-        for(k=0; k<dof; k++){
-          s1 += (L(j,k) * L(j,k)) * De(k,k);
+        for(int i = 0; i < dof; i++)
+        {
+            for(int j = 0; j < dof; j++)
+            {
+                A[i * dof + j] = DI[i][j];
+            }
         }
-        De(j,j) = DI(j,j) - s1;
-        // Off diagonal
-        for(i=(j+1); i<dof; i++){
-          s2 = 0.0;
-          for(k=0; k<j; k++){
-            s2 += L(i,k) * L(j,k) * De(k,k);
-          }
-          L(i,j) = (1 / De(j,j)) * (DI(i,j) - s2);
+
+        int M = 0, info = 0;
+        SimTK::Real W[dof], Z[dof * dof], WORK[26 * dof];
+        int ISUPPZ[2 * dof], IWORK[10 * dof];
+
+        dsyevr_('V', 'A', 'L', dof, A, dof, 0, 0, 0, 0, dlamch_('S'), M, W, Z, dof, ISUPPZ, WORK, 26 * dof, IWORK, 10 * dof, info);
+
+        // std::reverse(W, W + dof);
+        // std::reverse(Z, Z + dof * dof);
+
+        Mat<dof, dof> D, U;
+        for(int i = 0; i < dof; i++)
+        {
+            for(int j = 0; j < dof; j++)
+            {
+                if(i == j) D[i][j] = sqrt(W[i]);
+                else D[i][j] = 0;
+
+                U[i][j] = Z[i * dof + j];
+            }
         }
-      }
-
-      // Square root the diagonal
-      for(j=0; j<dof; j++){De(j,j) = sqrt(De(j,j));}
-
-      // Get LsqrtDe
-      sqrtDI = L *  De ;
+        
+        sqrtDI = U.transpose() * D * U;
     }
     else{
       sqrtDI(0,0) = sqrt(DI(0,0));

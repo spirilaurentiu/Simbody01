@@ -1478,6 +1478,8 @@ with the calcM() method.
 @see multiplyByMInv(), calcM() **/
 void calcMInv(const State&, Matrix& MInv) const;
 
+void calcMInvSqrt(const State&, Matrix& MInvSqrt) const;
+
 /** This operator calculates in O(m*n) time the m X m "projected inverse mass 
 matrix" or "constraint compliance matrix" W=G*M^-1*~G, where G (mXn) is the 
 acceleration-level constraint Jacobian mapped to generalized coordinates,
