@@ -61,6 +61,10 @@ VerletIntegratorRep::VerletIntegratorRep(Integrator* handle, const System& sys)
 bool VerletIntegratorRep::attemptDAEStep
    (Real t1, Vector& yErrEst, int& errOrder, int& numIterations)
 {
+// TIME START -----------------------------------------------------------------
+std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
+
     const System& system   = getSystem();
     State& advanced = updAdvancedState();
     Vector dummyErrEst; // for when we don't want the error estimate projected
@@ -131,11 +135,21 @@ bool VerletIntegratorRep::attemptDAEStep
     system.prescribeU(advanced);
     system.realize(advanced, Stage::Velocity);
 
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+std::cout << "VV.atempDAEStep.realizeVel end0 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end0 - start0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
+
     // No u projection yet.
 
     // Get new values for the derivatives.
     realizeStateDerivatives(advanced);
     
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
+std::cout << "VV.atempDAEStep.realizeStateDer end1 - end0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end1 - end0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
+
     // We're going to integrate the u's and z's with the 2nd order implicit
     // trapezoid rule: u(t+h) = u(t) + h*(f(u(t))+f(u(t+h)))/2. Unfortunately 
     // this is an implicit method so we have to iterate to refine u(t+h) until
@@ -147,6 +161,10 @@ bool VerletIntegratorRep::attemptDAEStep
     bool converged = false;
     Real prevChange = Infinity; // use this to quit early
     for (int i = 0; !converged && i < 10; ++i) {
+// TIME START -----------------------------------------------------------------
+start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
+
         ++numIterations;
         // At this point we know that the advanced state has been realized
         // through the Acceleration level, so its uDot and zDot reflect
@@ -183,10 +201,19 @@ bool VerletIntegratorRep::attemptDAEStep
                                   / (zsave.norm()+TinyReal);
         const Real change = std::max(convergenceU,convergenceZ);
         converged = (change <= tol);
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
+std::cout << "VV.atempDAEStep.for end2 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end2 - start0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
+
         if (i > 1 && (change > prevChange))
             break; // we're headed the wrong way after two iterations -- give up
         prevChange = change;
     }
+
+// TIME START -----------------------------------------------------------------
+start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
 
     // Now that we have achieved 2nd order estimates of u and z, we can use 
     // them to calculate a 3rd order error estimate for q and 2nd order error 
@@ -224,6 +251,11 @@ bool VerletIntegratorRep::attemptDAEStep
     errOrder = 3;
 
     //errOrder = qErrRMS > uzErrRMS ? 3 : 2;
+
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
+std::cout << "VV.atempDAEStep.for end3 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end3 - start0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
 
     return converged;
   }

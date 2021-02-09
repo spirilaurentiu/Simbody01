@@ -100,6 +100,10 @@ TimeStepperRep::TimeStepperRep(TimeStepper* handle, const System& system)
 
 Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
 
+// TIME START -----------------------------------------------------------------
+std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
+
     // Handler is allowed to throw an exception if it fails since we don't
     // have a way to recover.
     HandleEventsOptions handleOpts(integ->getConstraintToleranceInUse());
@@ -128,6 +132,11 @@ Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
         Integrator::SuccessfulStepStatus status = 
             integ->stepTo(reportTime, eventTime);
         //------------------------------------------------------
+
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+std::cout << "TimeStepperRep end0 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end0 - start0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
 
         Stage lowestModified = Stage::Report;
         bool shouldTerminate;

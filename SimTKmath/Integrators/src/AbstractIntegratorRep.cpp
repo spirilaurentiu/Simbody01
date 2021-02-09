@@ -215,6 +215,10 @@ bool AbstractIntegratorRep::attemptDAEStep
 Integrator::SuccessfulStepStatus 
 AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
 
+// TIME START -----------------------------------------------------------------
+std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
+
     try {
       assert(initialized);
       assert(reportTime >= getState().getTime());
@@ -246,10 +250,6 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
 
       bool wasLastStep=false;
       for(;;) { // MAIN STEPPING LOOP
-
-// TIME START -----------------------------------------------------------------
-//std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
-// TIME START -----------------------------------------------------------------
 
           // At this point the system's advancedState is the one to which
           // we last advanced successfully. It has been realized through the
@@ -414,8 +414,8 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
           updAdvancedState().autoUpdateDiscreteVariables();
 
 // TIME STOP ..........................................................................................................................
-//std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-//std::cout << "AbstractIntegratorRep end0 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end0 - start0).count() << " us.\n";
+std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+std::cout << "AbstractIntegratorRep.stepTo end0 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end0 - start0).count() << " us.\n";
 // TIME STOP ==========================================================================================================================         
 
           //---------------- TAKE ONE STEP --------------------
@@ -425,8 +425,8 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
 
 
 // TIME STOP ..........................................................................................................................
-//std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
-//std::cout << "AbstractIntegratorRep end1 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end1 - start0).count() << " us.\n";
+std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
+std::cout << "AbstractIntegratorRep.stepTo end1 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end1 - start0).count() << " us.\n";
 // TIME STOP ==========================================================================================================================         
 
           ++internalStepsTaken;
@@ -528,6 +528,10 @@ bool AbstractIntegratorRep::adjustStepSize
 // This is a private method.
 bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
 {
+// TIME START -----------------------------------------------------------------
+std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
+
     Real t1;
     State& advanced = updAdvancedState();
 
@@ -546,7 +550,16 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
     
     Vector yErrEst(ny);
     bool stepSucceeded = false;
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+std::cout << "AbstractIntegratorRep.takeOneStep.begin end0 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end0 - start0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
+
     do {
+// TIME START -----------------------------------------------------------------
+std::chrono::steady_clock::time_point start0 = std::chrono::steady_clock::now();
+// TIME START -----------------------------------------------------------------
+
         // If we lose more than a small fraction of the step size we wanted
         // to take due to a need to stop at tMax, make a note of that so the
         // step size adjuster won't try to grow from the current step.
@@ -590,6 +603,11 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
             if (isNaN(actualInitialStepSizeTaken))
                     actualInitialStepSizeTaken = lastStepSize;
         }
+// TIME STOP ..........................................................................................................................
+std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+std::cout << "AbstractIntegratorRep.takeOneStep.do end0 - start0 "<< std::chrono::duration_cast<std::chrono::microseconds >(end0 - start0).count() << " us.\n";
+// TIME STOP ==========================================================================================================================         
+
     } while (!stepSucceeded);
     
     // The step succeeded. Check for event triggers. If there aren't any, we're
