@@ -47,39 +47,31 @@ class StateLimitedFriction;
 the mobilizers (joints) that define the generalized coordinates used to 
 represent the motion of those bodies, and constraints that must be satisfied
 by the values of those coordinates.
-
 There are many methods in the API for this class. For whole-system information
 and calculations, the methods here are the right ones to use. For information
 associated with individual objects contained in the subsystem, such as 
 MobilizedBody and Constraint objects, it is generally easier to obtain the
 information through the contained objects' APIs instead.
-
 This class is a "handle" containing only an opaque reference to the 
 underlying implementation class.
-
 <h3>Theory discussion</h3>
 The bodies, mobilizers, and constraints are represented mathematically with
 the following set of equations:
 <pre>
                      qdot = N u                 Kinematic differential eqns.
                      zdot = zdot(t,q,u,z)       Auxiliary states
-
          M udot + ~G mult = f(t,q,u,z)          Equations of motion
          G udot           = b(t,q,u) 
-
                  where
-
           [P]    [bp]
         G=[V]  b=[bv]  f = T + ~J*(F-C)
           [A]    [ba]
-
           pdotdot = P udot - bp(t,q,u) = 0      Acceleration constraints
              vdot = V udot - bv(t,q,u) = 0
     a(t,q,u,udot) = A udot - ba(t,q,u) = 0
           
                    pdot = P u - c(t,q) = 0      Velocity constraints
                               v(t,q,u) = 0
-
                                 p(t,q) = 0      Position constraints
                                   n(q) = 0      Normalization constraints
 </pre>
@@ -96,7 +88,6 @@ differentiation of p(), vdot by differentiation of v(). P(t,q)=Dpdot/Du
 V(t,q,u)=Dv/Du. (We use capital "D" to indicate partial derivative.) n(q) is 
 the set of quaternion normalization constraints, which exist only at the 
 position level and are uncoupled from everything else.
-
 We calculate the constraint multipliers like this:
 <pre>
           G M^-1 ~G mult = G udot0 - b
@@ -107,23 +98,18 @@ mult: mult = pinv(G M^-1 ~G)(G M^-1 f - b). Then the real udot is
 udot = udot0 - udotC, with udotC = M^-1 ~G mult. Note: M^-1* is an
 O(n) operator that provides the desired result; it <em>does not</em> require
 forming or factoring M.
-
 NOTE: only the following constraint matrices have to be formed and factored:
 <pre>
    [G M^-1 ~G]   to calculate multipliers
-
    [P N^-1]      for projection onto position manifold (a.k.a. Pq)
-
    [ P ]         for projection onto velocity manifold
    [ V ]  
 </pre>
-
 When working in a weighted norm with weights W on the state variables and
 weights T (1/tolerance) on the constraint errors, the matrices we need are
 actually [Tp Pq Wq^-1], [Tpv [P;V] Wu^-1], etc. with T and W diagonal
 weighting matrices. These can then be used to find least squares solutions
 in the weighted norms.
-
 In many cases these matrices consist of decoupled blocks which can
 be solved independently. (TODO: take advantage of that whenever possible
 to solve a set of smaller systems rather than one large one.) Also, in the
@@ -135,7 +121,6 @@ public:
 
 //==============================================================================
 /** @name      Construction, Destruction, Topological information
-
 Methods in this section are used in the extended construction phase for
 a %SimbodyMatterSubsystem which we call defining the "topology" of the
 multibody system. This includes adding mobilized bodies and constraints. 
@@ -215,7 +200,6 @@ MobilizedBodyIndex(0) with a regular labeling such that children have higher
 indices than their parents. Ground does not have a mobilizer (or I suppose 
 you could think of its mobilizer as the Weld joint that attaches it to the 
 universe), but otherwise every mobilized body has a unique body and mobilizer. 
-
 Example: 
   - Here we use a model of a planar pendulum with 1 degree-of-freedom.
   - The command getNumBodies() will return 2.  
@@ -286,7 +270,6 @@ SimbodyMatterSubsystem& operator=(const SimbodyMatterSubsystem& ss)
 
 //==============================================================================
 /** @name                  Set/get modeling options
-
 Methods in this section involve setting and getting various modeling options
 that may be selected. This includes whether to use quaternions or Euler angles
 to represent rotations, and enabling/disabling constraints. **/
@@ -360,7 +343,6 @@ void convertToQuaternions(const State& inputState, State& outputState) const;
 in some manner that doesn't necessarily keep quaternions normalized, fix them. 
 Note that all of Simbody's integrators and solvers take care of this 
 automatically so most users will never need to make this call. 
-
 Since we are modifying q's here, Stage::Position is invalidated.
 @param[in,out]  state **/
 void normalizeQuaternions(State& state) const;
@@ -370,7 +352,6 @@ void normalizeQuaternions(State& state) const;
 
 //==============================================================================
 /** @name               Calculate whole-system properties
-
 These methods perform calculations that yield properties of the system as
 a whole. These are \e operators, meaning that they make use of the supplied
 State but do not modify the State. They simply calculate a result and return
@@ -440,7 +421,6 @@ Real calcKineticEnergy(const State& state) const;
 
 //==============================================================================
 /** @name         System and Task Space Kinematic Jacobian Operators 
-
 The system kinematic Jacobian maps between mobility space (generalized speeds 
 and generalized forces) and Cartesian body space (mobilized body frame spatial 
 velocities and spatial forces). A task space Jacobian maps between mobility 
@@ -449,7 +429,6 @@ bodies, and generally located away from the body frame. A task space Jacobian
 J can be used to construct various task space matrices such as the task space 
 compliance matrix J M^-1 ~J or its inverse, the task space (or operational
 space) inertia matrix. 
-
 The system Jacobian J(q) maps n generalized speeds u to spatial velocities V of 
 each of the nb mobilized bodies (including Ground), measured at the body frame 
 origin relative to Ground, and expressed in the Ground frame. The transpose ~J 
@@ -459,7 +438,6 @@ task space Jacobians map from n generalized speeds to nt task frame spatial
 velocities (expressed in Ground), and transposed task space Jacobians map 
 between task frame spatial forces (or impulses), expressed in Ground, and 
 generalized forces (or generalized impulses).
-
 Simbody provides fast O(n) methods ("operators") that can form matrix-vector
 products like J*u or ~J*F without forming J. The "bias" term Jdot*u (also known
 as the Coriolis acceleration) is also available; this arises when working at
@@ -474,7 +452,6 @@ matrix-vector products. Performance estimates are given with each method so that
 you can determine which methods to use. If you can, you should use the O(n) 
 methods -- it is a good habit to get into when using an O(n) multibody code like
 Simbody!
-
 Note that the Jacobian is associated with an expressed-in frame for the
 velocity or force vector and a designated station (point) on each body. We 
 always use the Ground frame for Jacobians. For the system Jacobian, the body 
@@ -485,7 +462,6 @@ may be specified. We provide three different sets of methods for working with
       of n 3-vectors (or a 3*nt X n Matrix of scalars)
     - the Frame Jacobian for a set of nt task frames fixed to a body: JF, nt 
       rows of n 6-vectors (or a 6*nt X n Matrix of scalars)
-
 The rotational part of a Jacobian is the same for any frame fixed to the same 
 body. So for Frame Jacobians you need specify only a station on the body (the 
 frame's origin point). That means if you want a 3*nt X n Orientation Jacobian, 
@@ -493,7 +469,6 @@ you can obtain it from alternate rows of a Frame Jacobian. Using the above
 terminology, the complete %System Jacobian is a Frame Jacobian for which the 
 task frames are the body frames, with each MobilizedBody appearing only once 
 and in order of MobilizedBodyIndex (starting with Ground). 
-
 It is acceptable for the same body to appear more than once in a list of tasks;
 these are likely to conflict but that can be dealt with elsewhere. **/
 
@@ -505,7 +480,6 @@ vector u is a set of generalized speeds, then this produces the body spatial
 velocities that result from those generalized speeds. That is, the result is 
 V_GB = J*u where V_GB[i] is the spatial velocity of the i'th body's body frame 
 origin (in Ground) that results from the given set of generalized speeds. 
-
 @param[in]      state
     A State compatible with this System that has already been realized to
     Stage::Position.
@@ -521,7 +495,6 @@ origin (in Ground) that results from the given set of generalized speeds.
     are nb spatial velocities V_GBi (that is, a pair of vectors w_GBi and v_GBi 
     giving angular and linear velocity). Note that Ground is body 0 so the 0th 
     element V_GB0=V_GG=Ju[0] is always zero on return.
-
 The kinematic Jacobian (partial velocity matrix) J is defined as follows:
 <pre>
       partial(V)                                 T                        T
@@ -531,7 +504,6 @@ The kinematic Jacobian (partial velocity matrix) J is defined as follows:
 Thus the element J(i,j)=partial(V_GBi)/partial(uj) (each element of J is a
 spatial vector). The transpose of this matrix maps spatial forces to 
 generalized forces; see multiplyBySystemJacobianTranspose().
-
 Note that we're using "monogram" notation for the spatial velocities, where
 <pre>
             G Bi
@@ -539,7 +511,6 @@ Note that we're using "monogram" notation for the spatial velocities, where
 </pre>
 the spatial velocity of body i's body frame Bi (at its origin), measured and
 expressed in the Ground frame G.
-
 <h3>Performance discussion</h3>
 This is a very fast operator, costing about 12*(nb+n) flops, where nb is the
 number of bodies and n the number of mobilities (degrees of freedom) u. In 
@@ -549,7 +520,6 @@ system with a free flying base and 19 pin joints (25 dofs altogether), this
 method takes 12*(20+25)=540 flops while the explicit matrix-vector multiply 
 would take 12*20*25=6000 flops. So this method is already >10X faster for 
 that small system; for larger systems the difference grows rapidly.
-
 @see multiplyBySystemJacobianTranspose(), calcSystemJacobian() **/
 void multiplyBySystemJacobian( const State&         state,
                                const Vector&        u,
@@ -559,13 +529,11 @@ void multiplyBySystemJacobian( const State&         state,
 part of the acceleration that is due only to velocities. This term is also
 known as the Coriolis acceleration, and it is returned here as a spatial
 acceleration of each body frame in Ground.
-
 @param[in]      state
     A State that has already been realized through Velocity stage.
 @param[out]     JDotu
     The product JDot*u where JDot = d/dt J, and u is the vector of generalized
     speeds taken from \a state. This is a Vector of nb SpatialVec elements.
-
 <h3>Theory</h3>
 The spatial velocity V_GBi of each body i can be obtained from the generalized
 speeds u by V = {V_GBi} = J*u. Taking the time derivative in G gives
@@ -575,7 +543,6 @@ speeds u by V = {V_GBi} = J*u. Taking the time derivative in G gives
 where JDot=JDot(q,u). This method returns JDot*u, which depends only on 
 configuration q and speeds u. Note that the same u is used to calculate JDot, 
 which is linear in u, so this term is quadratic in u.
-
 <h3>Implementation</h3>
 This method simply extracts the total Coriolis acceleration for each body that
 is already available in the \a state cache so there is no computation done
@@ -598,7 +565,6 @@ produce a generalized force-like result f=~J*F. If F_G is actually a set of
 spatial forces applied at the body frame origin of each body, and expressed
 in the Ground frame, then the result is the equivalent set of generalized
 forces f that would produce the same accelerations as F_G.
-
 @param[in]      state
     A State compatible with this System that has already been realized to
     Stage::Position.
@@ -612,7 +578,6 @@ forces f that would produce the same accelerations as F_G.
     This is the product f=~J*F_G as described above. This result is in the
     generalized force space, that is, it has one scalar entry for each of the
     n system mobilities (velocity degrees of freedom). Resized if necessary.
-
 The kinematic Jacobian (partial velocity matrix) J is defined as follows:
 <pre>
       partial(V)                                 T                        T
@@ -623,7 +588,6 @@ Thus the element J(i,j)=partial(V_GBi)/partial(uj) (each element of J is a
 spatial vector). J maps generalized speeds to spatial velocities (see
 multiplyBySystemJacobian()); its transpose ~J maps spatial forces 
 to generalized forces.
-
 Note that we're using "monogram" notation for the spatial velocities, where
 <pre>
             G Bi
@@ -631,7 +595,6 @@ Note that we're using "monogram" notation for the spatial velocities, where
 </pre>
 the spatial velocity of body i's body frame Bi (at its origin), measured and
 expressed in the Ground frame G.
-
 <h3>Performance discussion</h3>
 This is a very fast operator, costing about 18*nb+11*n flops, where nb is the
 number of bodies and n the number of mobilities (degrees of freedom) u. In 
@@ -641,7 +604,6 @@ system with a free flying base and 19 pin joints (25 dofs altogether), this
 method takes 18*20+11*25=635 flops while the explicit matrix-vector multiply 
 would take 12*20*25=6000 flops. So this method is already >9X faster for 
 that small system; for larger systems the difference grows rapidly. 
-
 @see multiplyBySystemJacobian(), calcSystemJacobian() **/
 void multiplyBySystemJacobianTranspose( const State&                state,
                                         const Vector_<SpatialVec>&  F_G,
@@ -657,17 +619,14 @@ find the spatial velocities of all nb bodies as V_G = J_G*u. The transpose of
 this matrix maps a set of spatial forces F_G, applied at the body frame 
 origins and expressed in Ground, to the equivalent set of n generalized 
 forces f: f = ~J_G*F_G. 
-
 @note The 0th row of the returned Jacobian is always zero since it represents
 the spatial velocity of Ground.
-
 <h3>Performance discussion</h3>
 Before using this method, consider whether you really need to form this
 very large matrix which necessarily will take O(n^2) space and time; it will 
 almost always be \e much faster to use the multiplyBySystemJacobian() method 
 that directly calculate the matrix-vector product in O(n) time without explicitly 
 forming the matrix. Here are the details:
-
 As currently implemented, forming the full Jacobian J costs about
 12*n*(nb+n) flops. Assuming nb ~= n, this is about 24*n^2 flops. Then
 if you want to form a product J*u explicitly, the matrix-vector multiply will 
@@ -677,7 +636,6 @@ very small systems it is cheaper to make repeated calls to
 multiplyBySystemJacobian() than to form J explicitly and multiply by it.
 See the Performance section for multiplyBySystemJacobian() for more
 comparisons.
-
 @see multiplyBySystemJacobian(), multiplyBySystemJacobianTranspose()
 @see calcSystemJacobian() alternate signature using scalar elements **/
 void calcSystemJacobian(const State&            state,
@@ -694,7 +652,6 @@ void calcSystemJacobian(const State&            state,
 /** Calculate the Cartesian ground-frame velocities of a set of task stations 
 (points fixed on bodies) that results from a particular set of generalized 
 speeds u. The result is the station velocities measured and expressed in Ground.
-
 @param[in]      state
     A State that has already been realized through Position stage.
 @param[in]      onBodyB
@@ -712,7 +669,6 @@ speeds u. The result is the station velocities measured and expressed in Ground.
 @param[out]     JSu
     The resulting product JS*u, where JS is the station task Jacobian. Resized
     to nt if needed.
-
 <h3>Performance discussion</h3>
 It is almost always better to use this method than to form an explicit 3*nt X n 
 station task Jacobian explicitly and then multiply by it. If you have only one 
@@ -723,7 +679,6 @@ Station Jacobian JS explicitly and use it once. However, because this would be
 such a skinny matrix (3 X n) explicit multiplication is cheap so if you will 
 re-use this same Jacobian repeatedly before recalculating (at least 6 times) 
 then it may be worth calculating and saving it. Here are the details:
-
 A call to this method costs 27*nt + 12*(nb+n) flops. If you assume that 
 nb ~= n >> 1, you could say this is about 27*nt + 24*n flops. In
 contrast, assuming you already have the 3*nt X n station Jacobian JS available,
@@ -734,7 +689,6 @@ So to form a one-task Jacobian and use it once is 4X more expensive (96*n vs
 24*n), but if you use it more than 5 times it is cheaper to do it
 explicitly. Forming a one-task JS and using it 100 times costs about 690*n 
 flops while calling this method 100 times would cost about 2400*n flops.
-
 @see multiplyByStationJacobianTranspose(), calcStationJacobian() **/
 void multiplyByStationJacobian(const State&                      state,
                                const Array_<MobilizedBodyIndex>& onBodyB,
@@ -761,13 +715,11 @@ Vec3 multiplyByStationJacobian(const State&         state,
 to a set of nt station tasks (points fixed to bodies) P. The applied forces 
 f_GP should be 3-vectors expressed in Ground. This is considerably faster than 
 forming the Jacobian explicitly and then performing the matrix-vector multiply.
-
 <h3>Performance discussion</h3>
 Cost is about 30*nt + 18*nb + 11*n. Assuming nb ~= n, this is roughly
 30*(n+nt). In contrast, forming the complete 3*nt X n matrix would cost about
 90*(n+nt/2), and subsequent explicit matrix-vector multiplies would cost
 about 6*nt*n each.
-
 @see multiplyByStationJacobian(), calcStationJacobian() **/
 void multiplyByStationJacobianTranspose
    (const State&                        state,
@@ -798,16 +750,13 @@ generalized speeds u, you can find the Cartesian velocities of stations P as
 v_GP = JS*u, where v_GP is a 3*nt column vector. The transpose of this 
 matrix maps a 3*nt vector of forces f_GP (expressed in Ground and applied 
 to P) to the equivalent set of n generalized forces f: f = ~JS*f_GP.
-
 @note It is almost always far more efficient to use multiplyByStationJacobian()
 or multiplyByStationJacobianTranspose() to form matrix-vector products rather 
 than to use this method to form the Jacobian explicitly. See the performance 
 discussions there.
-
 Overloaded signatures of this method are available to allow you to obtain the
 Jacobian either as an nt X n Matrix with Vec3 elements, or as 3*nt X n Matrix
 with scalar elements.
-
 @param[in]      state
     A State that has already been realized through Position stage.
 @param[in]      onBodyB
@@ -819,7 +768,6 @@ with scalar elements.
     from each body B's origin Bo to its station P, expressed in frame B.
 @param[out]     JS
     The resulting nt X n station task Jacobian. Resized if necessary.
-
 <h3>Performance discussion</h3>
 The cost of a call to this method is about 42*nt + 54*nb + 33*n flops. If we 
 assume that nb ~= n >> 1, this is roughly 90*(n+nt/2) flops. Then once the 
@@ -828,7 +776,6 @@ Station Jacobian JS has been formed, each JS*u matrix-vector product costs
 plan to re-use it a lot, this can be computationally efficient; but for single
 use or more than a few tasks you can do much better with 
 multiplyByStationJacobian() or multiplyByStationJacobianTranspose().
-
 @see multiplyByStationJacobian(), multiplyByStationJacobianTranspose() **/
 void calcStationJacobian(const State&                        state,
                          const Array_<MobilizedBodyIndex>&   onBodyB,
@@ -870,7 +817,6 @@ void calcStationJacobian(const State&       state,
 part of the station's acceleration that is due only to velocities. This term 
 is also known as the Coriolis acceleration, and it is returned here as a linear
 acceleration of the station in Ground.
-
 @param[in]      state
     A State that has already been realized through Velocity stage.
 @param[in]      onBodyB
@@ -883,7 +829,6 @@ acceleration of the station in Ground.
 @param[out]     JSDotu
     The resulting product JSDot*u, where JSDot is the time derivative of JS,
     the station task Jacobian. Resized to nt if needed.
-
 <h3>Theory</h3>
 The velocity v_GP of a station point P in the Ground frame G can be obtained 
 from the generalized speeds u using the station Jacobian for P, as <pre>
@@ -896,7 +841,6 @@ velocities. We allow for a set of task points P so that all their bias terms
 can be calculated in a single sweep of the multibody tree. Note that u is taken
 from the \a state and that the same u shown above is also used to calculate 
 JSDot_P, which is linear in u, so the bias term is quadratic in u.
-
 <h3>Implementation</h3>
 This method just obtains body B's total Coriolis acceleration already available
 in the \a state cache and shifts it to station point P. Cost is 48*nt flops.
@@ -931,15 +875,12 @@ Vec3 calcBiasForStationJacobian(const State&         state,
 
 /** Calculate the spatial velocities of a set of nt task frames A={Ai} fixed to 
 nt bodies B={Bi}, that result from a particular set of n generalized speeds u.
-
 The result is each task frame's angular and linear velocity measured and 
 expressed in Ground. Using this method is considerably faster than forming the 
 6*nt X n Frame Jacobian explicitly and then performing the matrix-vector 
 multiply. See the performance analysis below for details.
-
 There is a simplified signature of this method available if you have only a
 single frame task.
-
 @param[in]      state
     A State that has already been realized through Position stage.
 @param[in]      onBodyB
@@ -959,14 +900,12 @@ single frame task.
 @param[out]     JFu
     The resulting product JF*u, where JF is the frame task Jacobian. Resized
     if needed to a Vector of nt SpatialVec entries.
-
 @note All frames A fixed to a given body B have the same angular velocity so 
 we do not actually need to know the task frames' orientations here, just the
 location on B of their origin points Ao. If you have a Transform X_BA giving 
 the pose of frame A in the body frame B, you can extract the position vector 
 for the origin point Ao using X_BA.p() and pass that as the \a originAoInB 
 parameter here.
-
 <h3>Performance discussion</h3>
 A call to this method costs 27*nt + 12*(nb+n) flops. If you assume that 
 nb ~= n >> 1, you could say this is about 25*(nt+n) flops. In contrast, assuming 
@@ -979,11 +918,9 @@ and use it once is almost 8X more expensive (192*n vs 25*n), but if you use it
 more than 16 times it is (marginally) cheaper to do it explicitly (for one
 task). For example, forming a one-task JF and using it 100 times costs 1392*n 
 flops while calling this method 100 times would cost about 2500*n flops.
-
 Conclusion: in almost all practical cases you are better off using this operator
 rather than forming JF, even if you have only a single frame task and certainly 
 if you have more than two tasks.
-
 @see multiplyByFrameJacobianTranspose(), calcFrameJacobian() **/
 void multiplyByFrameJacobian
    (const State&                        state,
@@ -1013,7 +950,6 @@ SpatialVec multiplyByFrameJacobian( const State&         state,
 applied forces are spatial vectors (pairs of 3-vectors) expressed in Ground. Use
 of this O(n) method is considerably faster than forming the 6*nt X n Jacobian 
 explicitly and then performing an O(n^2) matrix-vector multiply.
-
 @param[in]      state
     A State that has already been realized through Position stage.
 @param[in]      onBodyB
@@ -1031,7 +967,6 @@ explicitly and then performing an O(n^2) matrix-vector multiply.
 @param[out]     f
     The Vector of n generalized forces that results from applying the forces
     \a F_GAo to the task frames. Resized if necessary.
-
 <h3>Performance discussion</h3>
 A call to this method costs 33*nt + 18*nb + 11*n flops. If you assume that 
 nb ~= n >> 1, you could say this is about 30*(n+nt) flops. In contrast, assuming 
@@ -1044,11 +979,9 @@ but if you use it more than 10 times it is (marginally) cheaper to do it
 explicitly. For example, forming a one-task JF and using it 100 times costs 
 around 1392*n flops while calling this method 100 times would cost about 
 3000*n flops.
-
 Conclusion: in almost all practical cases you are better off using this operator
 rather than forming JF, even if you have only a single frame task and certainly 
 if you have more than two tasks.
-
 @see multiplyByFrameJacobian(), calcFrameJacobian() **/
 void multiplyByFrameJacobianTranspose
    (const State&                        state,
@@ -1082,16 +1015,13 @@ of task frames A as V_GA = JF*u, where V_GA is a 6*nt column vector. The
 transpose of this matrix maps a 6*nt vector of spatial forces F_GA (expressed 
 in Ground and applied to the origins of frames A) to the equivalent set of n 
 generalized forces f: f = ~JF*F_GA.
-
 @note It is almost always far more efficient to use multiplyByFrameJacobian() or
 multiplyByFrameJacobianTranspose() to form matrix-vector products rather than to
 use this method to form the Jacobian explicitly. See the performance discussion 
 there.
-
 Overloaded signatures of this method are available to allow you to obtain the
 Jacobian either as an nt X n Matrix with SpatialVec elements, or as 6*nt X n 
 Matrix with scalar elements.
-
 @param[in]      state
     A State that has already been realized through Position stage.
 @param[in]      onBodyB
@@ -1106,7 +1036,6 @@ Matrix with scalar elements.
 @param[out]     JF
     The resulting nt X n frame task Jacobian, with each element a SpatialVec. 
     Resized if necessary.
-
 <h3>Performance discussion</h3>
 The cost of a call to this method is about 42*nt + 108*nb + 66*n flops. If we 
 assume that nb ~= n >> 1, this is roughly 180*(n+nt/4) flops. Then once the 
@@ -1115,7 +1044,6 @@ Frame Jacobian JF has been formed, each JF*u matrix-vector product costs about
 plan to re-use it a lot, this can be computationally efficient; but for single
 use or more than a few tasks you can do much better with 
 multiplyByFrameJacobian() or multiplyByFrameJacobianTranspose().
-
 @see multiplyByFrameJacobian(), multiplyByFrameJacobianTranspose() **/
 void calcFrameJacobian(const State&                         state,
                        const Array_<MobilizedBodyIndex>&    onBodyB,
@@ -1158,10 +1086,8 @@ void calcFrameJacobian(const State&             state,
 parts of the frames' accelerations that are due only to velocities. This term 
 is also known as the Coriolis acceleration, and it is returned here as spatial
 accelerations of the frames in Ground.
-
 There is a simplified signature of this method available if you have only a
 single frame task.
-
 @param[in]      state
     A State that has already been realized through Velocity stage.
 @param[in]      onBodyB
@@ -1177,7 +1103,6 @@ single frame task.
     The result JFDot*u, where JF is the task frame Jacobian and JFDot its
     time derivative, and u is the set of generalized speeds taken from the
     the supplied \a state.
-
 <h3>Theory</h3>
 The spatial velocity V_GA of frame A can be obtained from the generalized
 speeds u using the frame Jacobian for A, as V_GA = JF*u. Taking the time 
@@ -1188,12 +1113,10 @@ derivative in G gives
 This method returns JFDot*u, which depends only on configuration and 
 velocities. Note that the same u is used to calculate JFDot, which is linear
 in u, so the term JFDot*u is quadratic in u.
-
 <h3>Implementation</h3>
 This method just obtains body B's total Coriolis acceleration already available
 in the \a state cache and shifts it to the A frame's origin Ao, for each of the
 nt task frames. Cost is 48*nt flops.
-
 @see getTotalCoriolisAcceleration(), shiftAccelerationBy()
 **/
 void calcBiasForFrameJacobian
@@ -1235,7 +1158,6 @@ that can be described in terms of those matrices (e.g., multiply by the mass
 matrix) but are actually done using O(n), matrix-free algorithms. There are
 also routines here for obtaining the matrices explicitly, although working with
 explicit matrices should be avoided whenever performance is an issue.
-
 The mass matrix M and constraint matrix G are the most significant. G=[P;V;A]
 is composed of submatrices P for position (holonomic), V for velocity 
 (nonholonomic), and A for acceleration-only constraints. These matrices are
@@ -1254,7 +1176,6 @@ one entry for each of the n mobilities). If v is a set of mobility accelerations
 (f=M*udot). Only the supplied vector is used, and M depends only on position 
 states, so the result here is not affected by velocities in the State.
 Constraints and prescribed motions are ignored.
-
 The current implementation requires about 120*n flops and does not require 
 realization of composite-body or articulated-body inertias. 
 @par Required stage
@@ -1268,7 +1189,6 @@ acceleration (udot=M^-1*f). Only the supplied vector is used, and M depends
 only on position states, so the result here is not affected by velocities in 
 \a state. In particular, you'll have to obtain your own inertial forces and 
 put them in f if you want them included.
-
 @param[in]      state
     This is a State that has been realized through Position stage, from which
     the current system configuration and articulated body inertias are 
@@ -1286,7 +1206,6 @@ put them in f if you want them included.
     using Motion objects or mobilizer locks (see below), then only the 
     non-prescribed entries in MinvV are calculated; the prescribed ones are set 
     to zero.
-
 <h3>Behavior with prescribed motion</h3>
 If you prescribe the motion of one or more mobilizers using Motion objects or
 mobilizer locking, the behavior of this method is altered. (This does \e not 
@@ -1295,7 +1214,6 @@ motion enabled, this method works only with the free (non-prescribed)
 mobilities. Only the entries in \a v corresponding to free mobilities are 
 examined, and only the entries in the result \a MinvV corresponding to free 
 mobilities are calculated; the others are set to zero.
-
 <h3>Theory</h3>
 View the unconstrained, prescribed zero-velocity equations of motion 
 M udot + tau = f as partitioned into "free" and "prescribed" variables like 
@@ -1307,7 +1225,6 @@ this:
 </pre>
 The free and prescribed variables have been grouped here for clarity but
 in general they are interspersed among the columns and rows of M.
-
 Given that decomposition, this method returns
 <pre>
     [udot_f]   [udot_f]   [M_ff^-1  0  ][f_f]
@@ -1317,7 +1234,6 @@ Given that decomposition, this method returns
 When there is no prescribed motion M_ff is the entire mass matrix, and the 
 result is udot_f=udot=M^-1*f. When there is prescribed motion, M_ff is a 
 submatrix of M, and the result is the nf elements of udot_f, with udot_p=0.
-
 <h3>Implementation</h3>
 This is a stripped-down version of forward dynamics. It requires the hybrid
 free/prescribed articulated body inertias to have been realized and will 
@@ -1325,7 +1241,6 @@ initiate that calculation if necessary the first time it is called for a given
 configuration q. The M^-1*f calculation requires two sweeps of the multibody 
 tree, an inward sweep to accumulate forces, followed by an outward sweep to 
 propagate accelerations.
-
 <h3>Performance</h3>
 If the supplied State does not already contain realized values for the
 articulated body inertias, then they will be realized when this operator is 
@@ -1335,10 +1250,8 @@ inertias are available, repeated calls to this operator are very fast, with
 worst case around 80*n flops when all mobilizers have 1 dof. If you want to
 force realization of the articulated body inertias, call the method
 realizeArticulatedBodyInertias().
-
 @par Required stage
   \c Stage::Position (articulated body inertias realized first if necessary)
-
 @see multiplyByM(), calcMInv(), realizeArticulatedBodyInertias() **/ 
 void multiplyByMInv(const State&    state,
                     const Vector&   v,
@@ -1372,7 +1285,6 @@ Therefore the kinetic energy equipartition principle is satisfied.
     specified using Motion objects or mobilizer locks (see below), then only 
     the non-prescribed entries in MinvV are calculated; the prescribed ones are 
     set to zero.
-
 <h3>Behavior with prescribed motion</h3>
 If you prescribe the motion of one or more mobilizers using Motion objects or
 mobilizer locking, the behavior of this method is altered. (This does \e not 
@@ -1381,7 +1293,6 @@ motion enabled, this method works only with the free (non-prescribed)
 mobilities. Only the entries in \a v corresponding to free mobilities are 
 examined, and only the entries in the result \a sqrtMinvV corresponding to 
 free mobilities are calculated; the others are set to zero.
-
 <h3>Theory</h3>
 View the unconstrained, prescribed zero-velocity equations of motion 
 sqrt(M) u = v as partitioned into "free" and "prescribed" variables like 
@@ -1393,7 +1304,6 @@ this:
 </pre>
 The free and prescribed variables have been grouped here for clarity but
 in general they are interspersed among the columns and rows of M.
-
 Given that decomposition, this method returns
 <pre>
     [u_f]   [u_f]   [sqrtM_ff^-1  0][v_f]
@@ -1403,7 +1313,6 @@ Given that decomposition, this method returns
 When there is no prescribed motion M_ff is the entire mass matrix, and the 
 result is u_f=u=sqrt(M^-1)*v. When there is prescribed motion, M_ff is a 
 submatrix of M, and the result is the nf elements of u_f, with u_p=0.
-
 <h3>Implementation</h3>
 This is a stripped-down special version of forward dynamics. It requires the 
 hybrid free/prescribed articulated body inertias to have been realized and 
@@ -1411,7 +1320,6 @@ will initiate that calculation if necessary the first time it is called for a
 given configuration q. The sqrt(M^-1)*v calculation requires one outward sweep 
 of the multibody tree to propagate velocities given that modal velocities are
 already provided and don't need to be accumulated.
-
 <h3>Performance</h3>
 If the supplied State does not already contain realized values for the
 articulated body inertias, then they will be realized when this operator is 
@@ -1421,10 +1329,8 @@ inertias are available, repeated calls to this operator are very fast, with
 worst case around 80*n flops when all mobilizers have 1 dof. If you want to
 force realization of the articulated body inertias, call the method
 realizeArticulatedBodyInertias().
-
 @par Required stage
   \c Stage::Position (articulated body inertias realized first if necessary)
-
 @see multiplyByM(), calcMInv(), realizeArticulatedBodyInertias() **/ 
 void multiplyBySqrtMInv(const State&  state,
                         const Vector& v,
@@ -1452,10 +1358,8 @@ O(n^2) one. Instead, see if you can accomplish what you need with O(n) operators
 like multiplyByM() which calculates the matrix-vector product M*v in O(n)
 without explicitly forming M. Also, don't invert this matrix numerically to get
 M^-1. Instead, call the method calcMInv() which can produce M^-1 directly.
-
 @par Required stage
   \c Stage::Position 
-
 @see multiplyByM(), calcMInv() **/
 void calcM(const State&, Matrix& M) const;
 
@@ -1471,12 +1375,12 @@ Instead, see if you can accomplish what you need with O(n) operators like
 multiplyByMInv() which calculates the matrix-vector product M^-1*v in O(n) 
 without explicitly forming M or M^-1. If you need M explicitly, you can get it
 with the calcM() method.
-
 @par Required stage
   \c Stage::Position (articulated body inertias realized first if necessary)
-
 @see multiplyByMInv(), calcM() **/
 void calcMInv(const State&, Matrix& MInv) const;
+
+void calcMInvSqrt(const State&, Matrix& MInvSqrt) const;
 
 /** This operator calculates in O(m*n) time the m X m "projected inverse mass 
 matrix" or "constraint compliance matrix" W=G*M^-1*~G, where G (mXn) is the 
@@ -1486,7 +1390,6 @@ motion specified with Motion objects or mobilizer locking, M^-1 here is really
 M_ff^-1, that is, it is restricted to the free (non-prescribed) mobilities, but 
 scattered into a full n X n matrix (conceptually). See multiplyByMInv() and 
 calcMInv() for more information.
-
 W is the projection of the inverse mass matrix into the constraint coordinate
 space (that is, the vector space of the multipliers lambda). It can be used to 
 solve for the constraint forces that will eliminate a given constraint 
@@ -1498,16 +1401,13 @@ acceleration error:
 where udot is an unconstrained generalized acceleration. Note that you can
 view equation (1) as a dynamic system in a reduced set of m generalized
 coordinates, with the caveat that W may be singular.
-
 In general W is singular and does not uniquely determine lambda. Simbody 
 normally calculates a least squares solution for lambda so that loads are 
 distributed among redundant constraints. 
-
 @note If you just need to multiply W by a vector or matrix, you do not need
 to form W explicitly. Instead you can use the method described in the 
 Implementation section to produce a W*v product in the O(n) time it takes to 
 compute a single column of W.
-
 <h3>Implementation</h3>
 We are able to form W without forming G or M^-1 and without performing any 
 matrix-matrix multiplies. Instead, W is calculated using m applications of 
@@ -1519,7 +1419,6 @@ O(n) operators:
 Even if G and M^-1 were already available, computing W by matrix multiplication
 would cost O(m^2*n + m*n^2) time and O(m*n) intermediate storage. Here we do 
 it in O(m*n) time with O(n) intermediate storage, which is a \e lot better.
-
 @par Required stage
   \c Stage::Velocity (articulated body inertias realized first if necessary)
      
@@ -1540,7 +1439,6 @@ redundancies, so the solution for \e impulse is not unique. Simbody handles
 redundant constraints by finding least squares solutions, and this operator 
 method duplicates the method Simbody uses for determining the rank and 
 performing the factorization of W. 
-
 @param[in]      state
     The State whose generalized coordinates and speeds define the matrix W.
     Must already be realized to Velocity stage.
@@ -1552,7 +1450,6 @@ performing the factorization of W.
 @param[out]     impulse
     The set of constraint multiplier-space impulses that will produce the
     desired velocity changes without violating the constraints.
-
 To convert these constraint-space impulses into updates to the mobility-space
 generalized speeds u, use code like this:
 @code
@@ -1566,7 +1463,6 @@ generalized speeds u, use code like this:
     matter.multiplyByMInv(s,f,du);
     state.updU() += du; // update generalized speeds
 @endcode 
-
 Note that the length of the constraint-space vectors is m=mp+mv+ma, the total 
 number of acceleration-level constraints including the second time derivatives
 of the position (holonomic) constraints, the first time derivatives of the 
@@ -1581,12 +1477,10 @@ void solveForConstraintImpulses(const State&     state,
 constraint Jacobian G and a "u-like" (mobility space) vector of length n. 
 m is the number of active acceleration-level constraint equations, n is the 
 number of mobilities. This is an O(m+n) operation.
-
 If you are going to call this method repeatedly at the same time, positions and
 velocities, you should precalculate the bias term once and supply it to the
 alternate signature of this method. See the Implementation section for more 
 information.
-
 @pre \a state realized to Velocity stage
 @par Implementation
 This is accomplished by treating the input vector \a ulike as though it were
@@ -1619,7 +1513,6 @@ void multiplyByG(const State&  state,
 
 /** Calculate the bias vector needed for the higher-performance signature of
 the multiplyByG() method above. 
-
 @param[in]      state
     Provides time t, positions q, and speeds u; must be realized through
     Velocity stage so that all body spatial velocities are known.
@@ -1627,7 +1520,6 @@ the multiplyByG() method above.
     This is the bias vector for use in repeated calls to multiplyByG(). It
     will be resized if necessary to length m=mp+mv+ma, the total number of 
     active acceleration-level constraint equations. 
-
 @pre \a state realized to Velocity stage
 @par Implementation
 This method uses either velocity- or acceleration- level constraint error
@@ -1639,7 +1531,6 @@ of the m active constraints' (constant time) error methods to calculate
 or aerr(t,q,u;ulike)=G*ulike - b(t,q,u)   (nonholonomic or acceleration-only)
 </pre>
 with ulike=0, giving the bias term in O(m) time. 
-
 If you want the acceleration-level bias terms b for all the constraints, even
 if they are holonomic, use calcBiasForAccelerationConstraints(). **/
 void calcBiasForMultiplyByG(const State& state,
@@ -1650,7 +1541,6 @@ constraint Jacobian G which appears in the system equations of
 motion. Consider using the multiplyByG() method instead of this one, 
 which forms the matrix-vector product G*v in O(m+n) time without explicitly 
 forming G.
-
 @par Implementation
 This method generates G columnwise using repeated calls to multiplyByG(), 
 which makes use of the constraint error methods to perform a G*v product
@@ -1663,7 +1553,6 @@ void calcG(const State& state, Matrix& G) const;
 
 /** Calculate the acceleration constraint bias vector, that is, the terms in
 the acceleration constraints that are independent of the accelerations.
-
 @param[in]      state
     Provides time t, positions q, and speeds u; must be realized through
     Velocity stage so that all body spatial velocities are known.
@@ -1671,7 +1560,6 @@ the acceleration constraints that are independent of the accelerations.
     This is the bias vector for all the acceleration constraint equations
     together. It will be resized if necessary to length m=mp+mv+ma, the total 
     number of active acceleration-level constraint equations. 
-
 @pre \a state realized to Velocity stage
 @par Implementation
 We have constant-time constraint acceleration error methods 
@@ -1687,7 +1575,6 @@ constraints, vaerr() the once-differentiated velocity (nonholonomic)
 constraints, and aerr() the acceleration-only constraints. This method 
 sets \c udot = 0 and invokes each of those methods to obtain 
 bias = -[b_p b_v b_a].
-
 <h3>Performance note</h3>
 The actual acceleration constraint functions require both udot and body 
 accelerations for the constrained bodies; even with udot==0 body accelerations 
@@ -1695,7 +1582,6 @@ may have a non-zero velocity-dependent component (the coriolis accelerations).
 Those are already available in the state, but only as accelerations in Ground. 
 For constraints that have a non-Ground Ancestor, we have to convert the 
 accelerations to A at a cost of 105 flops/constrained body.
-
 @see calcConstraintAccelerationErrors() **/
 void calcBiasForAccelerationConstraints(const State& state,
                                         Vector&      bias) const;
@@ -1705,16 +1591,13 @@ computes the constraint acceleration errors that result due to the constraints
 currently active in the given state:
 <pre>
        pvaerr = G udot - b(t,q,u)
-
              where
-
               [P]    [bp]
             G=[V]  b=[bv]
               [A]    [ba]
 </pre>
 The quantity Subsystem::getUDotErr() is computed by the same operation as this
 method performs.
-
 @param[in] state
     A State compatible with this System that has already been realized to
     Stage::Velocity.
@@ -1728,13 +1611,10 @@ method performs.
     derivatives, nonholonomic first derivatives, and acceleration-only
     constraints. The vector will be resized if necessary to length m=mp+mv+ma,
     the total number of active acceleration-level constraint equations.
-
 @par Implementation
 This operator takes O(m+n) time.
-
 @par Required stage
   \c Stage::Velocity
-
 @see calcG(), calcBiasForAccelerationConstraints() **/
 void calcConstraintAccelerationErrors(const State&  state,
                                       const Vector& knownUDot,
@@ -1747,12 +1627,10 @@ length n. m=mp+mv+ma is the total number of active constraint equations,
 n (==nu) is the number of mobilities (generalized speeds u). If lambda is a set
 of constraint multipliers, then f=~G*lambda is the set of forces generated by
 the constraints, mapped into generalized forces. This is an O(m+n) operation.
-
 Because the velocity (non-holonomic) or acceleration-only constraint Jacobians
 V and A can have velocity dependence, the \a state supplied here must generally
 be realized through Velocity stage. If the system has only position (holonomic)
 constraints then the \a state need be realized only through Position stage.
-
 @param[in]      state
     A State that has been realized through Velocity stage (or Position stage
     if the system has no velocity-dependent constraint Jacobians).
@@ -1763,7 +1641,6 @@ constraints then the \a state need be realized only through Position stage.
 @param[out]     f
     This is the generalized force-like output. It will be resized if necessary
     to length equal to the number of mobilities (generalized speeds) n (==nu). 
-
 @par Implementation
 This is accomplished by treating the input vector \a lambda as though it were
 a set of Lagrange multipliers, then calling each of the active Constraints' 
@@ -1795,15 +1672,12 @@ void calcGTranspose(const State&, Matrix& Gt) const;
 position (holonomic) constraint Jacobian and \a qlike is a "q-like" 
 (generalized coordinate space) vector of length nq. Here mp is the number of 
 active position-level constraint equations in this system.
-
 If you are going to call this method repeatedly at the same time t and 
 configuration q and want maximum efficiency, you can gain a factor of almost
 2X by precalculating a bias term once using calcBiasForMultiplyByPq() and 
 supplying it to the alternate signature of this method. See the Theory
 section below for an explanation of the bias term.
-
 @pre \a state realized to Position stage
-
 <h3>Theory</h3>
 Simbody's position (holonomic) constraints are defined by the constraint 
 error equation 
@@ -1828,7 +1702,6 @@ Despite appearances, eq. (2) calculates its result in constant time per
 constraint equation, for a total cost that is O(n) or more strictly O(mp+nq).
 The matrix Pq is never actually formed; instead the matrix-vector product
 is calculated directly.
-
 <h3>Implementation</h3>
 We treat the input vector \a qlike as though it were a set of generalized 
 coordinate derivatives qdot. These are mapped to body velocities V in O(n) 
@@ -1839,7 +1712,6 @@ velocity error methods to get pverr(t,q;qlike)=Pq*qlike-Pt in O(n) time. A
 second call is made to evaluate the bias term pverr(t,q;0)=-Pt. We then 
 calculate the result \a PqXqlike = pverr(t,q;qlike)-pverr(t,q;0) in O(n) time
 using equation (3). 
-
 @see calcBiasForMultiplyByPq() **/
 void multiplyByPq(const State&  state,
                   const Vector& qlike,
@@ -1860,7 +1732,6 @@ void multiplyByPq(const State&  state,
 
 /** Calculate the bias vector needed for the higher-performance signature of
 the multiplyByPq() method above. 
-
 @param[in]      state
     Provides time t, and positions q; must be realized through
     Position stage so that all body spatial poses are known.
@@ -1868,9 +1739,7 @@ the multiplyByPq() method above.
     This is the bias vector for use in repeated calls to multiplyByPq(). It
     will be resized if necessary to length mp, the total number of 
     active position-level (holonomic) constraint equations. 
-
 @pre \a state realized to Position stage
-
 See multiplyByPq() for theory and implementation; this method is just 
 performing the qlike=0 case described there for calculating the bias term Pt.
 **/
@@ -1882,19 +1751,15 @@ void calcBiasForMultiplyByPq(const State& state,
 position error equations with respect to q. Consider using the multiplyByPq() 
 method instead of this one, which forms the matrix-vector product Pq*v in 
 O(m+n) time without explicitly forming Pq.
-
 Note that quaternion normalization constraints are \e not included in mp; we
 do not consider those holonomic constraints.
-
 @pre \a state realized to Position stage
-
 @param[in]      state
     A State realized through Position stage so that time and the pose 
     (configuration) of each body is known.
 @param[out]     Pq
     The position constraint Jacobian Dperr/Dq. This will be resized to
     mp X nq if necessary.
-
 @par Implementation
 This method generates Pq columnwise using repeated calls to multiplyByPq(), 
 which makes use of the position constraint velocity-level error methods to 
@@ -1902,7 +1767,6 @@ perrform a Pq*v product in O(m+n) time. See multiplyByPq() for a more
 detailed explanation. If Pq's columns are in contiguous memory we'll work
 in place, otherwise columns are generated into a contiguous temporary and
 then copied into Pq.
-
 @see multiplyByPq() **/
 void calcPq(const State& state, Matrix& Pq) const;
 
@@ -1915,10 +1779,8 @@ n (==nu) is the number of mobilities (generalized speeds u). If lambdap is a set
 of mp constraint multipliers, then f=~G*lambdap is the set of forces generated 
 by the position constraints, mapped into generalized forces. This is an 
 O(mp+n) operation.
-
 A holonomic constraint Jacobian cannot have a velocity dependence, so the
 \a state need be realized only to Position stage here.
-
 @param[in]      state
     A State that has been realized through Position stage. Time and
     configuration are taken from \a state.
@@ -1928,7 +1790,6 @@ A holonomic constraint Jacobian cannot have a velocity dependence, so the
 @param[out]     f
     This is the generalized force-like output. It will be resized if necessary
     to length equal to the number of mobilities (generalized speeds) n (==nu). 
-
 @par Implementation
 This is accomplished by treating the input vector \a lambdap as though it were
 a set of Lagrange multipliers, then calling each of the active holonomic
@@ -1948,19 +1809,15 @@ the position-level (holonomic) constraint Jacobian Pq (=P*N^-1), the partial
 derivative of the position error equations with respect to q. Consider using 
 the multiplyByPqTranspose() method instead of this one, which forms the 
 matrix-vector product ~Pq*v in O(m+n) time without explicitly forming ~Pq.
-
 Note that quaternion normalization constraints are \e not included in mp; we
 do not consider those holonomic constraints.
-
 @pre \a state realized to Position stage
-
 @param[in]      state
     A State realized through Position stage so that time and the pose 
     (configuration) of each body is known.
 @param[out]     Pqt
     The transposed position constraint Jacobian ~Pq=(Dperr/Dq)^T. This will be
     resized to nq X mp if necessary.
-
 @par Implementation
 This method generates \a Pqt columnwise using repeated calls to 
 multiplyByPqTranspose(), which makes use of the position constraint force
@@ -1968,7 +1825,6 @@ generating methods to perform a ~Pq*v product in O(m+n) time. See
 multiplyByPqTranspose() for a more detailed explanation. If Pqt's columns 
 are in contiguous memory we'll work in place, otherwise columns are generated 
 into a contiguous temporary and then copied into Pqt.
-
 @see multiplyByPqTranspose() **/
 void calcPqTranspose(const State& state, Matrix& Pqt) const;
 
@@ -1979,7 +1835,6 @@ the number of holonomic constraint equations (not including quaternion
 normalization constraints) and nu is the total number of generalized speeds as 
 found in the supplied State. P is resized if necessary; an error will be thrown
 if the Matrix is not the right size and not resizeable.
-
 @pre \a state is realized to Position stage
 @par Complexity:
 Calculates the m X n matrix in O(m*n) time, which is good if you really need
@@ -2035,7 +1890,6 @@ void multiplyByNDot(const State& s, bool transpose,
 
 //==============================================================================
 /** @name                  Miscellaneous Operators
-
 Operators make use of the State but do not write their results back
 into the State, although they may realize the lazy-evaluation cache entries
 containing articulated body inertias and related computations. If you want
@@ -2057,7 +1911,6 @@ attempt will be made to satisfy position and velocity constraints, or to
 set prescribed positions and velocities, nor even to check whether these 
 are satisfied; position and velocity constraint and prescribed positions 
 and velocities are simply irrelevant here.
-
 Given applied forces f_applied, this operator solves this set of equations:
 <pre>
      M udot + tau + ~G lambda + f_inertial = f_applied       (1)
@@ -2072,7 +1925,6 @@ associated with the mobilized bodies. On return all the entries in udot will
 have been set to their calculated or prescribed values, and body spatial 
 accelerations A_GB (that is, measured and expressed in Ground) are also 
 returned. Lambda and tau_p are necessarily calculated but are not returned here.
-
 f_applied is the set of generalized (mobility) forces equivalent to the 
 \a appliedMobilityForces and \a appliedBodyForces arguments supplied here. 
 That is,
@@ -2082,20 +1934,16 @@ That is,
 where J is the system Jacobian mapping between spatial and generalized
 coordinates. Typically these forces will have been calculated as a function of 
 state so we will have f_applied(t,q,u,z).
-
 M(t,q), G(t,q,u), and b(t,q,u) are defined by the mobilized bodies and 
 constraints present in the system. f_inertial(q,u) includes the 
 velocity-dependent gyroscopic and coriolis forces due to rigid body 
 rotations and is extracted internally from the already-realized state. 
-
 Note that this method does not allow you to specify your own prescribed udots; 
 those are calculated from the mobilizers' state-dependent Motion specifications
 (or are zero due to mobilizer locks) that are already part of the system.
-
 This is an O(n*m + m^3) operator where n is the number of generalized speeds
 and m the number of constraint equations (mobilities with prescribed motion are
 counted in n, not m).
-
 @par Required stage
   \c Stage::Dynamics (articulated body inertia will be realized if needed) **/ 
 void calcAcceleration
@@ -2119,13 +1967,10 @@ where udot={udot_f,udot_p}, tau={0,tau_p}. The unknowns are the free
 generalized accelerations udot_f and the prescribed motion generalized forces
 tau_p. f_inertial contains the velocity-dependent gyroscopic and coriolis
 forces due to rigid body rotations. No constraint forces are included.
-
 On return all the entries in udot will have been set to their calculated or 
 prescribed values, and body spatial accelerations A_GB (that is, measured and 
 expressed in Ground) are also returned. tau_p is not returned.
-
 This is an O(n) operator.
-
 @par Required stage
   \c Stage::Dynamics (articulated body inertia will be realized if needed) **/ 
 void calcAccelerationIgnoringConstraints
@@ -2145,7 +1990,6 @@ any constraints or prescribed motion they are ignored. This method solves
 for f_residual in O(n) time, meaning that the mass matrix M is never formed. 
 Inverse dynamics is considerably faster than forward dynamics, even though 
 both are O(n) in Simbody.
-
 In the above equation we solve for the residual forces \c f_residual given
 desired accelerations and (optionally) a set of applied forces. Here 
 \c f_applied is the mobility-space equivalent of all the applied forces
@@ -2159,7 +2003,6 @@ force) that would have to be applied at each mobility to give the desired
 in the State. Otherwise, only the explicitly-supplied forces affect the 
 results of this operator; any forces that may be present elsewhere in 
 the system are ignored.
-
 @param[in] state
      A State valid for the containing System, already realized to
      Stage::Velocity.
@@ -2185,10 +2028,8 @@ the system are ignored.
      length nu; that is, one scalar entry per mobility. You can view this as a 
      measure of how much the given \a knownUdot fails to satisfy the equations 
      of motion.
-
 @par Required stage
   \c Stage::Velocity 
-
 @see calcResidualForce(), multiplyByM()
 @see calcAcceleration(), calcAccelerationIgnoringConstraints() **/
 void calcResidualForceIgnoringConstraints
@@ -2214,15 +2055,12 @@ where f_applied is the mobility-space equivalent to all the applied forces
 equivalent of the velocity-dependent inertial forces due to rigid body 
 rotations (coriolis and gyroscopic forces), and the udots and lambdas are given
 values of the generalized accelerations and constraint multipliers, resp.
-
 Note that there is no requirement that the given udots satisfy the constraint
 equations; we simply solve the above equation for \c f_residual.
-
 The inertial forces depend on the velocities \c u already realized in the State.
 Otherwise, only the explicitly-supplied forces affect the results of this 
 operator; any forces that may be defined elsewhere in the system are ignored 
 here.
-
 @param[in] state
      A State valid for the containing System, already realized to
      \c Stage::Velocity.
@@ -2256,10 +2094,8 @@ here.
      if necessary to have length nu; that is, one scalar entry per mobility.
      You can view this as a measure of how much the given udot and lambda fail
      to satisfy the equations of motion.
-
 @par Required stage
   \c Stage::Velocity 
-
 @see calcResidualForceIgnoringConstraints() **/
 void calcResidualForce
    (const State&               state,
@@ -2275,9 +2111,7 @@ realized to Position stage. Composite body inertias are the spatial mass
 properties of the rigid body formed by a particular body and all bodies 
 outboard of that body as if all the outboard mobilizers were welded in their 
 current orientations. 
-
 This is a very fast O(n) operator.
-
 @par Required stage
   \c Stage::Position **/
 void calcCompositeBodyInertias(const State&    state,
@@ -2288,7 +2122,6 @@ void calcCompositeBodyInertias(const State&    state,
 /** Given a complete set of n generalized accelerations udot, this kinematic 
 operator calculates in O(n) time the resulting body accelerations, including 
 velocity-dependent terms taken from the supplied \a state.
-
 @pre \a state must already be realized to Velocity stage
 @param[in] state
     The State from which position- and velocity- related terms are taken; 
@@ -2307,17 +2140,14 @@ velocity-dependent terms taken from the supplied \a state.
     MobilizedBodyIndex with A_GB[0]==0 always. The angular acceleration
     vector for MobilizedBody i is A_GB[i][0]; linear acceleration of the
     body's origin is A_GB[i][1].
-
 @par Theory
 The generalized speeds u and spatial velocities V are related by the system
 Jacobian J as V=J*u. Thus the spatial accelerations A=Vdot=J*udot+Jdot*u.
-
 @par Implementation
 The Coriolis accelerations Jdot*u are already available in a State realized
 to Velocity stage. The J*udot term is equivalent to an application of 
 multiplyBySystemJacobian() to the \a knownUdot vector. The current 
 implementation uses 12*nu + 18*nb flops to produce nb body accelerations.
-
 @par Required stage
   \c Stage::Velocity 
   
@@ -2329,7 +2159,6 @@ void calcBodyAccelerationFromUDot(const State&         state,
 /** Treating all Constraints together, given a comprehensive set of m 
 Lagrange multipliers \e lambda, generate the complete set of body spatial forces
 and mobility (generalized) forces applied by all the Constraints.
-
 Spatial forces are applied at each body's origin and the moment and force
 vectors therein are expressed in the Ground frame. Watch the 
 sign -- normally constraint forces have opposite sign from applied forces, 
@@ -2338,10 +2167,8 @@ because our equations of motion are
 If you want to take Simbody-calculated multipliers and use them to generate 
 forces that look like applied forces, negate the multipliers in the argument
 passed to this call.
-
 State must be realized to Stage::Velocity to call this operator (although 
 typically the multipliers are obtained by realizing to Stage::Acceleration).
-
 This is an O(m) operator. In particular it does \e not involve forming or
 multiplying by the constraint force matrix ~G. Instead, one constant-time call
 is made to each %Constraint's calcConstraintForce methods.
@@ -2356,7 +2183,6 @@ void calcConstraintForcesFromMultipliers
 
 /** Calculate the mobilizer reaction force generated at each MobilizedBody,
 as felt at the mobilizer's outboard frame M, and expressed in Ground.
-
 @param[in] state        
     A State compatible with this System that has already been realized 
     to Stage::Acceleration.
@@ -2368,7 +2194,6 @@ as felt at the mobilizer's outboard frame M, and expressed in Ground.
     body's mobilizer frame M. The returned force is expressed in the
     Ground frame. Applied mobility (generalized) forces are \e included in the
     returned reaction forces.
-
 A simple way to think of the reaction force is to think of cutting the 
 mobilizer, then imagine the force required to make the system move in 
 the same manner as when the mobilizer was present. This is what the 
@@ -2378,14 +2203,11 @@ Some conventions do not include the mobility forces in the definition of a
 reaction force. We chose to include them since this preserves Newton's 
 3rd law of equal and opposite reactions between bodies. Ours is the same 
 convention as used in SD/FAST.
-
 @note You can think of the Ground body being welded to the universe at the
 Ground origin. The reactions reported for Ground are the ones that would 
 occur in that Weld mobilizer if it were really present. That is, it includes
 the effects of all the base bodies on Ground.
-
 <h3>How to find the reaction felt by the parent body</h3>
-
 A mobilizer connects a frame F fixed on the parent (inboard) body P to a
 frame M fixed on the child (outboard) body B. It exerts equal and opposite 
 reaction forces on the two bodies, at a given location in space. This method 
@@ -2413,7 +2235,6 @@ quantities:
         forcesAtFInG[i] = -shiftForceBy(forcesAtMInG[i], p_MF_G);
     }
 @endcode
-
 <h3>Implementation</h3>
 This method combines already-calculated quantities to calculate the reactions.
 See Abhi Jain's 2011 book "Robot and Multibody Dynamics", Eq. 7.34 page 128: 
@@ -2425,7 +2246,6 @@ rather than on the body's side. (The alternative P(A-a)+z given there does not
 work for prescribed mobilizers unless you replace "a" with "a_underscore" from
 equation 16.14.) After calculating F_reaction at the body frame
 origin Bo, we shift it to M for reporting.
-
 <h3>Performance</h3>
 The cost of the above calculation is 114 flops/body. The code presented
 above for converting from M to F costs an additional 81 flops/body if you
@@ -2446,7 +2266,6 @@ through Acceleration stage. The result contains entries only for prescribed
 mobilities; if you want these unpacked into u-space mobility forces, use
 findMotionForces() instead. A mobilizer may follow prescribed motion either
 because of a Motion object or a call to MobilizedBody::lock(). 
-
 @par Required stage
   \c Stage::Acceleration **/
 const Vector& getMotionMultipliers(const State& state) const;
@@ -2457,11 +2276,9 @@ stage, a call to the prescribe() solver using the same stage will eliminate
 the error. Accelerations should have been calculated to satisfy all prescribed
 accelerations, so the returned value should be zero always. The returned 
 Vector has one element per known (prescribed) q, known u, or known udot. 
-
 The \a state must be realized to Time stage to check Position errors,
 Position stage to check Velocity errors, and Acceleration stage to check
 Acceleration errors. 
-
 Errors are calculated actualValue - prescribedValue so a positive error
 indicates that the value in \a state is too large. **/
 Vector calcMotionErrors(const State& state, const Stage& stage) const;
@@ -2471,7 +2288,6 @@ objects active in this system. These are the same values as returned by
 getMotionMultipliers() but unpacked into u-space slots, with zeroes 
 corresponding to any "free" mobilities, that is, those whose motion is not 
 prescribed. 
-
 @par Required stage
   \c Stage::Acceleration **/
 void findMotionForces
@@ -2484,7 +2300,6 @@ Acceleration stage. Constraint multipliers are not directly interpretable as
 forces; if you want the actual forces use findConstraintForces() instead. If
 you want to know individual Constraint contributions to these forces, ask the 
 Constraint objects rather than this SimbodyMatterSubsystem object. 
-
 @par Required stage
   \c Stage::Acceleration **/
 const Vector& getConstraintMultipliers(const State& state) const;
@@ -2493,7 +2308,6 @@ const Vector& getConstraintMultipliers(const State& state) const;
 system. Constraints produce both body spatial forces and generalized 
 mobility-space forces. The supplied \a state must have been realized through 
 Acceleration stage. 
-
 @par Required stage
   \c Stage::Acceleration **/
 void findConstraintForces
@@ -2506,16 +2320,13 @@ currently active in this system. The sign is chosen so that a positive value for
 power means the Motion is adding energy to the system; negative means it is
 removing energy. The \a state must already have been realized through 
 Acceleration stage so that the prescribed motion forces are available.
-
 @param[in]      state
     A State realized through Acceleration stage from which we obtain the
     prescribed motion forces and the velocities needed to calculate power.
-
 <h3>Implementation</h3>
 We calculate power=-dot(tau, u) where tau is the set of mobility reaction 
 forces generated by Motion objects and mobilizer locks (tau[i]==0 if mobility
 i is free), and u is the set of all generalized speeds.
-
 @par Required stage
   \c Stage::Acceleration
 @see calcConstraintPower() **/
@@ -2527,11 +2338,9 @@ value for power means the Constraints (taken together) are adding energy to the
 system; negative means they are removing energy. The \a state must already have
 been realized through Acceleration stage so that the constraint forces are 
 available.
-
 Note that if you want to know the power output of an individual Constraint,
 you should call that Constraint's calcPower() method; here they are all summed
 together.
-
 @param[in]      state
     A State realized through Acceleration stage from which we obtain the
     constraint forces and the velocities needed to calculate power.
@@ -2540,13 +2349,11 @@ together.
     or dissipated by each Constraint. A positive value means that together the
     constraints are adding energy to the system; negative means they are 
     removing energy.
-
 <h3>Implementation</h3>
 We calculate power=-(dot(F,V)+dot(f,u)) where F is the set of body spatial
 reaction forces produced by the Constraints, V is the body spatial velocities, 
 f is the set of mobility reaction forces produced by the Constraints, and u is 
 the set of generalized speeds.
-
 @par Required stage
   \c Stage::Acceleration 
 @see calcMotionPower() **/
@@ -2585,7 +2392,6 @@ slot for the body. Note that this does not actually apply any forces to the
 multibody system! This is just a "helper" utility that makes it easier to 
 fill in a body forces array. This has no effect on the system unless you
 later supply the body forces array for use.
-
 Provide the station in the body frame, force in the Ground frame. 
 @par Required stage
   \c Stage::Position **/
@@ -2625,13 +2431,11 @@ void addInMobilityForce(const State&        state,
 
 //==============================================================================
 /** @name              Realization and response methods
-
 Realization methods request that some calculation be performed ("realized") if
 it has not already been done since the last change to one of the state 
 variables on which the result depends, with the result being placed in the
 state cache. Methods beginning with "get" are called \e responses and are used
 to extract pre-calculated information that has been realized into the cache.
-
 Realization is normally initiated at the System level. However, there are some
 "lazy" calculations in the %SimbodyMatterSubsystem whose computations are
 delayed until needed; you can cause those calculations to be performed 
@@ -2683,7 +2487,6 @@ not otherwise computed until they are needed for forward dynamics computations,
 typically due to realization of Stage::Acceleration. Invoking any operator that
 needs the effect of the inverse mass matrix will realize ABIs implicitly. They
 are guaranteed to be available by Stage::Acceleration.
-
 @par Required stage
   \c Stage::Position, or \c Stage::Instance and \c PositionKinematics
 @see invalidateArticulatedBodyInertias() **/
@@ -2700,12 +2503,10 @@ dynamics computations, typically due to realization of Stage::Acceleration.
 Invoking any operator that needs the effect of both the inverse mass matrix 
 and internal Coriolis forces will realize these computations implicitly. They
 are guaranteed to be available by Stage::Acceleration.
-
 Note that this method does not implicitly realize anything it depends on; you
 must make sure its prerequisites VelocityKinematics and ArticulatedBodyInertias
 are already realized; see realizeVelocityKinematics() and 
 realizeArticulatedBodyInertias() for that purpose.
-
 The actual computations here are not made available through the API since
 (unlike the ABIs) they are not particularly meaningful. They do save time
 during repeated acceleration computations where forces are changing but 
@@ -2713,7 +2514,6 @@ configuration and velocity are fixed; these are common. The ability to force
 realization here is provided so that you can make sure the state cache doesn't
 get implicitly updated behind your back; this can be necessary in some 
 multithreaded applications.
-
 @par Required stage
   \c Stage::Instance and \c VelocityKinematics and \c ArticulatedBodyInertias
 @see invalidateArticulatedBodyVelocity() **/
@@ -2792,10 +2592,8 @@ the first call to this method will trigger realization of all the CBIs if they
 have not already been calculated using realizeCompositeBodyInertias(). Ground is
 mobilized body zero; its CBI has infinite mass and principle moments of inertia, 
 and center of mass at (0,0,0).
-
 Although CBIs can be useful in inverse dynamics calculations, Simbody does not
 use them for that purpose so they won't be calculated unless requested.
-
 @par Required stage
   \c Stage::Position, or Stage::Instance and realizePositionKinematics()
 @see realizeCompositeBodyInertias() **/
@@ -2815,7 +2613,6 @@ realizeArticulatedBodyInertias(), then their calculation will be triggered by
 the first call to this method (they must all be calculated at the same time).
 ABIs are saved once calculated and will be reused until the configuration q
 changes.
-
 Ground is mobilized body zero; its articulated body inertia is the same as its 
 composite body inertia -- an ordinary Spatial Inertia but with infinite mass and
 principle moments of inertia, and center of mass at (0,0,0).
@@ -2875,7 +2672,6 @@ getTotalCentrifugalForces(const State& state, MobilizedBodyIndex mbx) const;
 
 //==============================================================================
 /** @name              Testing and debugging utilities
-
 Methods in this section provide alternate ways of calculating quantities for
 which we provide more efficient methods above. You should use the better 
 methods normally, but these can be very useful for regression testing and
@@ -2887,9 +2683,7 @@ results should agree with the faster methods to within numerical precision. **/
 regression testing and Simbody development. This method builds a freebody
 "diagram" for each body in turn to determine the unknown reaction force at
 its inboard mobilizer.
-
 The given \a state must have been realized through Acceleration stage.
-
 <h3>Implementation</h3>
 We use a tip-to-base recursion in which we assemble all applied body forces
 from force elements, constraints, and gyroscopic effects and compare that with
@@ -2900,7 +2694,6 @@ reaction force. That is shifted to the M frame and reported. Then the equal
 and opposite reaction is applied to the parent body and included in its 
 collection of applied forces, which can be used to determine its reaction force
 and so on.
-
 This is is about 3X slower than the method used by 
 calcMobilizerReactionForces(). 
 @see calcMobilizerReactionForces() **/
@@ -2986,7 +2779,6 @@ bool isArticulatedBodyVelocityRealized(const State&) const;
 
 //==============================================================================
 /** @name Proposed particle API
-
 (NOT IMPLEMENTED YET) These methods are a proposed API for explicit handling
 of particles. Currently a particle should be implemented as point mass with a 
 Cartesian (translation) mobilizer to Ground instead. The idea here would be to
@@ -3062,7 +2854,6 @@ const Vec3& getParticleAcceleration(const State& s, ParticleIndex p) const {
 
 //==============================================================================
 /** @name                    Deprecated methods
-
 If you are still using any methods in this section, please stop. If that's a
 problem, please post to the Simbody forum and explain why the method should
 not be deprecated.

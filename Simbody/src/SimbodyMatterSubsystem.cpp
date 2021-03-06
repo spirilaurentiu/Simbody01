@@ -622,6 +622,9 @@ void SimbodyMatterSubsystem::calcM(const State& s, Matrix& M) const
 void SimbodyMatterSubsystem::calcMInv(const State& s, Matrix& MInv) const 
 {   getRep().calcMInv(s, MInv); }
 
+void SimbodyMatterSubsystem::calcMInvSqrt(const State& s, Matrix& MInvSqrt) const 
+{   getRep().calcMInvSqrt(s, MInvSqrt); }
+
 
 // Note: the implementation methods that generate matrices do *not* require 
 // contiguous storage, so we can just forward to them with no preliminaries.
@@ -2459,4 +2462,3 @@ SpatialVec SimbodyMatterSubsystem::calcSystemCentralMomentum(const State& s) con
 }
 
 } // namespace SimTK
-

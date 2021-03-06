@@ -432,7 +432,6 @@ public:
     getMobilizerCoriolisAcceleration()), and `b` is the (rotational 
     velocity-dependent) spatial gyroscopic force acting on B, as returned by
     getGyroscopicForce().
-
     Although this computation depends only on position and velocity kinematics, 
     we won't calculate it until the first time it is needed, generally during 
     realize(Acceleration). You can get it earlier if you have already realized 
@@ -628,6 +627,8 @@ public:
     // filled in. Only the non-prescribed block Mrr is inverted; other elements
     // are not written.
     void calcMInv(const State& s, Matrix& MInv) const;
+
+    void calcMInvSqrt(const State& s, Matrix& MInv) const;
 
     void calcTreeResidualForces(const State&,
         const Vector&               appliedMobilityForces,
