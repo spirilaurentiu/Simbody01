@@ -362,16 +362,16 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     # libc++ is an implementation of the C++ standard library for OSX.
     if(APPLE)
         if(XCODE)
-            set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
+            set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17")
             set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
         else()
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
             if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
             endif()
         endif()
     else() # not APPLE
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     endif()
 
     if(inst_set_to_use)
@@ -392,6 +392,9 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     # how to handle loops instead.
     ##set(GCC_OPT_ENABLE "-funroll-loops")
 
+    # -fprofile-generate -fprofile-use -flto
+    set(GCC_OPT_ENABLE "-march=native")
+
     # If you know of optimization bugs that affect Simbody in particular
     # gcc versions, this is the place to turn off those optimizations.
     set(GCC_OPT_DISABLE)
@@ -399,17 +402,17 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     # C++
     set(BUILD_CXX_FLAGS_DEBUG          "-g ${GCC_INST_SET}")
     set(BUILD_CXX_FLAGS_RELEASE
-      "-DNDEBUG -O2 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+      "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_CXX_FLAGS_RELWITHDEBINFO
-    "-DNDEBUG -O2 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_CXX_FLAGS_MINSIZEREL     "-DNDEBUG -Os ${GCC_INST_SET}")
 
     # C
     set(BUILD_C_FLAGS_DEBUG            "-g ${GCC_INST_SET}")
     set(BUILD_C_FLAGS_RELEASE
-      "-DNDEBUG -O2 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+      "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_C_FLAGS_RELWITHDEBINFO
-    "-DNDEBUG -O2 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_C_FLAGS_MINSIZEREL       "-DNDEBUG -Os ${GCC_INST_SET}")
 
     # C++
