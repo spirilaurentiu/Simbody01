@@ -214,7 +214,6 @@ bool AbstractIntegratorRep::attemptDAEStep
 //==============================================================================
 Integrator::SuccessfulStepStatus 
 AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
-
     try {
       assert(initialized);
       assert(reportTime >= getState().getTime());
@@ -408,12 +407,11 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
           // variables. Other than those cache entries, no other calculations 
           // are invalidated.
           updAdvancedState().autoUpdateDiscreteVariables();
-
+         
           //---------------- TAKE ONE STEP --------------------
           // Now take a step and see whether an event occurred.
           bool eventOccurred = takeOneStep(tMax, reportTime);
           //---------------------------------------------------
-
 
           ++internalStepsTaken;
           ++statsStepsTaken;
@@ -532,9 +530,7 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
     
     Vector yErrEst(ny);
     bool stepSucceeded = false;
-
     do {
-
         // If we lose more than a small fraction of the step size we wanted
         // to take due to a need to stop at tMax, make a note of that so the
         // step size adjuster won't try to grow from the current step.
@@ -578,7 +574,6 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
             if (isNaN(actualInitialStepSizeTaken))
                     actualInitialStepSizeTaken = lastStepSize;
         }
-
     } while (!stepSucceeded);
     
     // The step succeeded. Check for event triggers. If there aren't any, we're

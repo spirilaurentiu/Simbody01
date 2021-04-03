@@ -60,16 +60,5 @@
 #include "SimTKcommon/Testing.h"
 #endif
 
-//#ifndef DEBUG_STUDY
-//#define DEBUG_STUDY
-//#endif
-
-#ifdef DEBUG_STUDY
-#define STUDY(STR)  printf("%s", STR)
-#define STUDYN(STR) printf("%s\n", STR)
-#else
-#define STUDY(STR)
-#define STUDYN(STR)
-#endif
 
 #endif /* SimTK_SimTKCOMMON_H_ */

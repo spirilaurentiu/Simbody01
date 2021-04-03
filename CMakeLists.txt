@@ -18,11 +18,6 @@ else()
 endif()
 cmake_minimum_required(VERSION ${SIMBODY_REQUIRED_CMAKE_VERSION})
 
-if(COMMAND cmake_policy)
-    cmake_policy(SET CMP0003 NEW)
-    cmake_policy(SET CMP0005 NEW)
-endif()
-
 project(Simbody)
 
 # At this point CMake will have set CMAKE_INSTALL_PREFIX to /usr/local on Linux
@@ -45,6 +40,11 @@ include(GNUInstallDirs)
 option(SIMBODY_COVERAGE
        "Adding ability to assess test coverage (requires gcc or clang)."
        OFF)
+
+# Declare the option to install documentation
+option(INSTALL_DOCS
+       "Install documentation."
+       ON)
 
 # Check compiler version
 if(MSVC)
@@ -76,10 +76,10 @@ elseif(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 endif()
 
 set(SIMBODY_MAJOR_VERSION 3)
-set(SIMBODY_MINOR_VERSION 7)
+set(SIMBODY_MINOR_VERSION 8)
 set(SIMBODY_PATCH_VERSION 0)
 
-set(SIMBODY_COPYRIGHT_YEARS "2005-18")
+set(SIMBODY_COPYRIGHT_YEARS "2005-20")
 
 # underbar separated list of dotted authors, no spaces or commas
 set(SIMBODY_AUTHORS "Michael.Sherman_Peter.Eastman")
@@ -148,6 +148,10 @@ endif()
 
 # Ensure that debug libraries have "_d" appended to their names.
 set(CMAKE_DEBUG_POSTFIX "_d")
+
+# This variable gets used when configuring the Info.plist for
+# simbody-visualizer.app; see cmake/MacOSXBundleInfo.plist.in.
+set(MACOSX_BUNDLE_HIGH_RESOLUTION_CAPABLE "false")
 
 #
 # These are the names of all the libraries we may generate. These are
@@ -358,16 +362,16 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     # libc++ is an implementation of the C++ standard library for OSX.
     if(APPLE)
         if(XCODE)
-            set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17")
+            set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
             set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
         else()
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
             if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
             endif()
         endif()
     else() # not APPLE
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
     endif()
 
     if(inst_set_to_use)
@@ -388,9 +392,6 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     # how to handle loops instead.
     ##set(GCC_OPT_ENABLE "-funroll-loops")
 
-    # -fprofile-generate -fprofile-use -flto
-    set(GCC_OPT_ENABLE "-march=native")
-
     # If you know of optimization bugs that affect Simbody in particular
     # gcc versions, this is the place to turn off those optimizations.
     set(GCC_OPT_DISABLE)
@@ -398,17 +399,17 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     # C++
     set(BUILD_CXX_FLAGS_DEBUG          "-g ${GCC_INST_SET}")
     set(BUILD_CXX_FLAGS_RELEASE
-      "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+      "-DNDEBUG -O2 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_CXX_FLAGS_RELWITHDEBINFO
-    "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    "-DNDEBUG -O2 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_CXX_FLAGS_MINSIZEREL     "-DNDEBUG -Os ${GCC_INST_SET}")
 
     # C
     set(BUILD_C_FLAGS_DEBUG            "-g ${GCC_INST_SET}")
     set(BUILD_C_FLAGS_RELEASE
-      "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+      "-DNDEBUG -O2 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_C_FLAGS_RELWITHDEBINFO
-    "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    "-DNDEBUG -O2 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
     set(BUILD_C_FLAGS_MINSIZEREL       "-DNDEBUG -Os ${GCC_INST_SET}")
 
     # C++
@@ -593,7 +594,9 @@ endif()
 # These are used in Doxyfile.in and SimbodyConfig.cmake.in.
 set(SIMBODY_INSTALL_DOXYGENDIR   "${CMAKE_INSTALL_DOCDIR}/api")
 set(SIMBODY_DOXYGEN_TAGFILE_NAME "SimbodyDoxygenTagfile")
-add_subdirectory(doc)
+if( INSTALL_DOCS )
+    add_subdirectory(doc)
+endif()
 
 # Specify where visualizer should be installed. This needs to be in the
 # root CMakeLists.txt so the cmake config file can see this value.
@@ -632,8 +635,10 @@ if( BUILD_EXAMPLES )
     add_subdirectory( examples )
 endif()
 
-file(GLOB TOPLEVEL_DOCS LICENSE.txt *.md doc/*.pdf doc/*.md)
-install(FILES ${TOPLEVEL_DOCS} DESTINATION ${CMAKE_INSTALL_DOCDIR})
+if( INSTALL_DOCS )
+    file(GLOB TOPLEVEL_DOCS LICENSE.txt *.md doc/*.pdf doc/*.md)
+    install(FILES ${TOPLEVEL_DOCS} DESTINATION ${CMAKE_INSTALL_DOCDIR})
+endif()
 
 # Add uninstall target
 configure_file(

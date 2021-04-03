@@ -57,11 +57,6 @@ public:
     coincident with the parent and child body frames. **/
     Cylinder(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
 
-    // Needed in GMOL - CYL
-    const Vec2& getDefaultQ() const ;
-    MobilizedBody::Cylinder& setDefaultQ(const Vec2& q) ;
-    // GMOL - CYL
-
     Cylinder& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
         (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
     }

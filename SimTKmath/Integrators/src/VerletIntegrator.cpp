@@ -147,7 +147,6 @@ bool VerletIntegratorRep::attemptDAEStep
     bool converged = false;
     Real prevChange = Infinity; // use this to quit early
     for (int i = 0; !converged && i < 10; ++i) {
-
         ++numIterations;
         // At this point we know that the advanced state has been realized
         // through the Acceleration level, so its uDot and zDot reflect
@@ -184,7 +183,6 @@ bool VerletIntegratorRep::attemptDAEStep
                                   / (zsave.norm()+TinyReal);
         const Real change = std::max(convergenceU,convergenceZ);
         converged = (change <= tol);
-
         if (i > 1 && (change > prevChange))
             break; // we're headed the wrong way after two iterations -- give up
         prevChange = change;

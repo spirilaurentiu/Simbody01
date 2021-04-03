@@ -432,6 +432,7 @@ public:
     getMobilizerCoriolisAcceleration()), and `b` is the (rotational 
     velocity-dependent) spatial gyroscopic force acting on B, as returned by
     getGyroscopicForce().
+
     Although this computation depends only on position and velocity kinematics, 
     we won't calculate it until the first time it is needed, generally during 
     realize(Acceleration). You can get it earlier if you have already realized 
@@ -594,27 +595,6 @@ public:
         const Vector&                   f,
         Vector&                         MInvf) const; 
 
-    // Multiply by the square root mass matrix inverse in O(n) time. 
-    // Works only with the non-prescribed submatrix Mrr of M;
-    // entries v_p in v are not accessed,
-    // and entries sqrtMinvV_p in sqrtMinvV are not written.
-    void multiplyBySqrtMInv(const State&    s,
-        const Vector&                       v,
-        Vector&                             sqrtMinvV) const;
-
-    // Compute the mass matrix determinant O(n) time.
-    void calcDetM(const State&    s,
-        const Vector&             f,
-        Vector&                   MInvf,
-        Real*                     detM) const; // EU
-
-    // Compute the Fixman torque O(n) time.
-    void calcFixmanTorque(const State&    s,
-        const Vector&             f,
-        Vector&                   MInvf,
-        Real*                     detM) const; // EU
-
-    // Calculate the mass matrix in O(n^2) time. State must have already
     // Calculate the mass matrix in O(n^2) time. State must have already
     // been realized to Position stage. M must be resizeable or already the
     // right size (nXn). The result is symmetric but the entire matrix is
@@ -627,8 +607,6 @@ public:
     // filled in. Only the non-prescribed block Mrr is inverted; other elements
     // are not written.
     void calcMInv(const State& s, Matrix& MInv) const;
-
-    void calcMInvSqrt(const State& s, Matrix& MInv) const;
 
     void calcTreeResidualForces(const State&,
         const Vector&               appliedMobilityForces,
