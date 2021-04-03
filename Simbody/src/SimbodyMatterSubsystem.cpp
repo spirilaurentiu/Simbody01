@@ -472,6 +472,163 @@ void SimbodyMatterSubsystem::multiplyByMInv(const State&    state,
 
 
 
+
+/////////////////////////////////////////////////////////////////////////
+// Added from Laurentiu's branch, prior update.
+
+//==============================================================================
+//                           MULTIPLY BY SQRT M INV
+//==============================================================================
+// Check arguments, copy in/out of contiguous Vectors if necessary, call the
+// implementation method to calculate u = sqrt(M^-1)*v.
+void SimbodyMatterSubsystem::multiplyBySqrtMInv(const State&    state,
+                                                const Vector&   v,
+                                                Vector&         sqrtMinvV) const
+{
+    const SimbodyMatterSubsystemRep& rep = getRep();
+    const int nu = rep.getNU(state);
+
+    SimTK_ERRCHK2_ALWAYS(v.size() == nu,
+        "SimbodyMatterSubsystem::multiplyBySqrtMInv()",
+        "Argument 'v' had length %d but should have the same length"
+        " as the number of mobilities (generalized speeds u) %d.",
+        v.size(), nu);
+
+    sqrtMinvV.resize(nu);
+    if (nu==0) return;
+
+    // Assume at first that both Vectors are contiguous.
+    const Vector* cv    = &v;
+    Vector*       csqrtMinvV   = &sqrtMinvV;
+    bool needToCopyBack = false;
+
+    // We'll allocate these or not as needed.
+    Vector contig_v, contig_sqrtMinvV;
+
+    if (!v.hasContiguousData()) {
+        contig_v.resize(nu); // contiguous memory
+        contig_v(0, nu) = v; // copy, prevent reallocation
+        cv = (const Vector*)&contig_v;
+    }
+
+    if (!sqrtMinvV.hasContiguousData()) {
+        contig_sqrtMinvV.resize(nu); // contiguous memory
+        csqrtMinvV = (Vector*)&contig_sqrtMinvV;
+        needToCopyBack = true;
+    }
+
+    rep.multiplyBySqrtMInv(state, *cv, *csqrtMinvV);
+
+    if (needToCopyBack)
+        sqrtMinvV = *csqrtMinvV;
+}
+
+//==============================================================================
+//                               CALC DET M    
+//==============================================================================
+// Check arguments, copy in/out of contiguous Vectors if necessary, call the
+// implementation method to calculate a = M^-1*f.
+void SimbodyMatterSubsystem::calcDetM(const State&          state,
+                                            const Vector&   f,
+                                            Vector&         MInvf,
+                                            Real*           detM) const
+{
+    const SimbodyMatterSubsystemRep& rep = getRep();
+    const int nu = rep.getNU(state);
+
+    SimTK_ERRCHK2_ALWAYS(f.size() == nu,
+        "SimbodyMatterSubsystem::calcDetM()",
+        "Argument 'f' had length %d but should have the same length"
+        " as the number of mobilities (generalized speeds u) %d.", 
+        f.size(), nu);
+
+    MInvf.resize(nu);
+    if (nu==0) return;
+
+    // Assume at first that both Vectors are contiguous.
+    const Vector* cf    = &f;
+    Vector*       cMInvf   = &MInvf;
+    bool needToCopyBack = false;
+
+    // We'll allocate these or not as needed.
+    Vector contig_f, contig_MInvf;
+
+    if (!f.hasContiguousData()) {
+        contig_f.resize(nu); // contiguous memory
+        contig_f(0, nu) = f; // copy, prevent reallocation
+        cf = (const Vector*)&contig_f;
+    }
+
+    if (!MInvf.hasContiguousData()) {
+        contig_MInvf.resize(nu); // contiguous memory
+        cMInvf = (Vector*)&contig_MInvf;
+        needToCopyBack = true;
+    }
+
+    rep.calcDetM(state, *cf, *cMInvf, detM);
+
+    if (needToCopyBack)
+        MInvf = *cMInvf;
+ 
+}
+
+//==============================================================================
+//                               CALC FIXMAN TORQUE    
+//==============================================================================
+// Check arguments, copy in/out of contiguous Vectors if necessary
+void SimbodyMatterSubsystem::calcFixmanTorque(const State&          state,
+                                              const Vector&   f,
+                                              Vector&         MInvf,
+                                              Real*           detM) const
+{
+    const SimbodyMatterSubsystemRep& rep = getRep();
+    const int nu = rep.getNU(state);
+
+    SimTK_ERRCHK2_ALWAYS(f.size() == nu,
+        "SimbodyMatterSubsystem::calcFixmanTorque()",
+        "Argument 'f' had length %d but should have the same length"
+        " as the number of mobilities (generalized speeds u) %d.", 
+        f.size(), nu);
+
+    MInvf.resize(nu);
+    if (nu==0) return;
+
+    // Assume at first that both Vectors are contiguous.
+    const Vector* cf    = &f;
+    Vector*       cMInvf   = &MInvf;
+    bool needToCopyBack = false;
+
+    // We'll allocate these or not as needed.
+    Vector contig_f, contig_MInvf;
+
+    if (!f.hasContiguousData()) {
+        contig_f.resize(nu); // contiguous memory
+        contig_f(0, nu) = f; // copy, prevent reallocation
+        cf = (const Vector*)&contig_f;
+    }
+
+    if (!MInvf.hasContiguousData()) {
+        contig_MInvf.resize(nu); // contiguous memory
+        cMInvf = (Vector*)&contig_MInvf;
+        needToCopyBack = true;
+    }
+
+    rep.calcFixmanTorque(state, *cf, *cMInvf, detM);
+
+    if (needToCopyBack)
+        MInvf = *cMInvf;
+ 
+}
+
+
+void SimbodyMatterSubsystem::calcMInvSqrt(const State& s, Matrix& MInvSqrt) const 
+{   getRep().calcMInvSqrt(s, MInvSqrt); }
+
+
+/////////////////////////////////////////////////////////////////////////
+
+
+
 void SimbodyMatterSubsystem::calcM(const State& s, Matrix& M) const 
 {   getRep().calcM(s, M); }
 

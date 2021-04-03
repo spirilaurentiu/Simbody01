@@ -5402,6 +5402,208 @@ void SimbodyMatterSubsystemRep::multiplyByMInv(const State& s,
 
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Added from Laurentiu's branch written prior update
+
+//==============================================================================
+//                            MULTIPLY BY SQRT M INV
+//==============================================================================
+// Calculate u = sqrt(M^-1) v. We also get spatial velocities V_GB for
+// each body as a side effect.
+// This Subsystem must already be realized through Position stage or at
+// least have PositionKinematics already available; we'll 
+// realize articulated body inertias here if necessary.
+// All vectors must use contiguous storage.
+void SimbodyMatterSubsystemRep::multiplyBySqrtMInv(const State& s,
+    const Vector&                                               v,
+    Vector&                                                     sqrtMinvV) const
+{
+    STUDYN("SimbodyMatterSubsystemRep::multiplyBySqrtMInv base-to-tip");
+    const SBInstanceCache&                  ic  = getInstanceCache(s);
+    const SBTreePositionCache&              tpc = getTreePositionCache(s);
+    realizeArticulatedBodyInertias(s); // (may already have been realized)
+    const SBArticulatedBodyInertiaCache&    abc = getArticulatedBodyInertiaCache(s);
+
+    const int nb = getNumBodies();
+    const int nu = getNU(s);
+
+    assert(v.size() == nu);
+    sqrtMinvV.resize(nu);
+    if (nu==0)
+        return;
+
+    assert(v.hasContiguousData());
+    assert(sqrtMinvV.hasContiguousData());
+
+    // Temporaries
+    Array_<Real>        eps(nu);
+    Array_<SpatialVec>  z(nb), zPlus(nb), V_GB(nb);
+
+    // Point to raw data of input arguments.
+    const Real* vPtr         = &v[0];
+    Real*       sqrtMinvVPtr = &sqrtMinvV[0];
+   
+    for(int i=0; i<nu; i++){eps[i] = vPtr[i];}
+
+    for (int i=0 ; i<(int)rbNodeLevels.size() ; i++){
+        for (int j=0 ; j<(int)rbNodeLevels[i].size() ; j++) {
+            const RigidBodyNode& node = *rbNodeLevels[i][j];
+            node.multiplyBySqrtMInvPassOutward(ic,tpc,abc,
+                eps.cbegin(), V_GB.begin(), sqrtMinvVPtr);
+        }
+    }
+   
+}
+
+
+//==============================================================================
+//                               CALC DET M 
+//==============================================================================
+// Calculate udot = M^-1 f. We also get spatial accelerations A_GB for 
+// each body as a side effect.
+// This Subsystem must already be realized through Dynamics stage.
+// All vectors must use contiguous storage.
+void SimbodyMatterSubsystemRep::calcDetM(const State& s,
+    const Vector&                                     f,
+    Vector&                                           MInvf,
+    Real*                                             detM) const 
+{
+    STUDYN("SimbodyMatterSubsystemRep::calcDetM base-to-tip");
+    const SBInstanceCache&                  ic  = getInstanceCache(s);
+    const SBTreePositionCache&              tpc = getTreePositionCache(s);
+    //const SBDynamicsCache&                  dc  = getDynamicsCache(s);
+    const SBArticulatedBodyInertiaCache&    abc = getArticulatedBodyInertiaCache(s);
+
+    const int nb = getNumBodies();
+    const int nu = getNU(s);
+
+    int i, j, k;
+
+    assert(f.size() == nu);
+
+    MInvf.resize(nu);
+    if (nu==0)
+        return;
+
+    assert(f.hasContiguousData());
+    assert(MInvf.hasContiguousData());
+
+    // Temporaries
+    Array_<Real>        eps(nu);
+    Array_<SpatialVec>  z(nb), zPlus(nb), A_GB(nb);
+
+    // Point to raw data of input arguments.
+    const Real* fPtr     = &f[0];       
+    Real*       MInvfPtr = &MInvf[0];
+
+    for(int i=0; i<nu; i++){eps[i] = fPtr[i];}
+
+    *detM = 1.0;
+    for (int i=0 ; i<(int)rbNodeLevels.size() ; i++){
+        for (int j=0 ; j<(int)rbNodeLevels[i].size() ; j++) {
+            const RigidBodyNode& node = *rbNodeLevels[i][j];
+            //std::cout<<"calcDetM node["<<i<<"]["<<j<<"] START " << std::endl;
+            node.calcDetMPass2Outward(ic,tpc,abc,//dc, 
+                eps.cbegin(), A_GB.begin(), MInvfPtr, detM);
+            //std::cout<<"calcDetM node["<<i<<"]["<<j<<"]";
+            //std::cout<<" detM "<< *detM << " END" << std::endl;
+        }
+    }
+
+}
+//.............................    CALC DET M  ...............................
+
+
+//==============================================================================
+//                               CALC FIXMAN TORQUE 
+//==============================================================================
+// Calculate udot = M^-1 f. We also get spatial accelerations A_GB for 
+// each body as a side effect.
+// This Subsystem must already be realized through Dynamics stage.
+// All vectors must use contiguous storage.
+void SimbodyMatterSubsystemRep::calcFixmanTorque(const State& s,
+    const Vector&                                      f,
+    Vector&                                            MInvf,
+    Real*                                              detM) const 
+{
+    STUDYN("SimbodyMatterSubsystemRep::calcFixmanTorque base-to-tip");
+    realizeY(s); // Need this
+
+    const SBInstanceCache&                  ic  = getInstanceCache(s);
+    const SBTreePositionCache&              tpc = getTreePositionCache(s);
+    const SBDynamicsCache&                  dc  = getDynamicsCache(s);
+    const SBArticulatedBodyInertiaCache&    abc = getArticulatedBodyInertiaCache(s);
+
+    const int nb = getNumBodies();
+    const int nu = getNU(s);
+
+    int i, j, k;
+
+    assert(f.size() == nu);
+
+    MInvf.resize(nu);
+    if (nu==0)
+        return;
+
+    assert(f.hasContiguousData());
+    assert(MInvf.hasContiguousData());
+
+    // Temporaries
+    Array_<Real>        eps(nu);
+    Array_<SpatialVec>  z(nb), zPlus(nb), A_GB(nb);
+
+    // Point to raw data of input arguments.
+    const Real* fPtr     = &f[0];       
+    Real*       MInvfPtr = &MInvf[0];
+
+    for(int i=0; i<nu; i++){eps[i] = fPtr[i];}
+
+    *detM = 1.0;
+    for (int i=0 ; i<(int)rbNodeLevels.size() ; i++){
+        for (int j=0 ; j<(int)rbNodeLevels[i].size() ; j++) {
+            const RigidBodyNode& node = *rbNodeLevels[i][j];
+            node.calcFixmanTorquePass2Outward(ic,tpc,abc,dc, 
+                eps.cbegin(), A_GB.begin(), MInvfPtr, detM);
+        }
+    }
+
+}
+//.............................    CALC FIXMAN TORQUE  ...............................
+
+
+
+void SimbodyMatterSubsystemRep::calcMInvSqrt(const State& s, Matrix& MInvSqrt) const {
+    const int nu = getTotalDOF();
+    MInvSqrt.resize(nu,nu);
+    if (nu==0) return;
+
+    // This could probably be calculated faster by doing it directly and
+    // filling in only half. For now we're doing it with repeated calls to
+    // the O(n) operator multiplyByMInvSqrt().
+
+    // If M's columns are contiguous we can avoid copying.
+    const bool isContiguous = MInvSqrt(0).hasContiguousData();
+    Vector contig_col(isContiguous ? 0 : nu);
+
+    Vector f(nu); f.setToZero();
+    for (int i=0; i < nu; ++i) {
+        f[i] = 1;
+        if (isContiguous) {
+            //multiplyBySqrtMInv(s, f, MInvSqrt(i));
+            multiplyBySqrtMInv(s, f, contig_col);
+            MInvSqrt(i) = contig_col;
+        } else {
+            multiplyBySqrtMInv(s, f, contig_col);
+            MInvSqrt(i) = contig_col;
+        }
+        f[i] = 0;
+    }
+}
+
+
+
+
+
 //==============================================================================
 //                              MULTIPLY BY M
 //==============================================================================

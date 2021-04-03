@@ -595,6 +595,34 @@ public:
         const Vector&                   f,
         Vector&                         MInvf) const; 
 
+    
+    //////////////////////////////////////////////////////////////////////
+    // Added from Laurentiu's branches (written prior to the update)
+
+    // Multiply by the square root mass matrix inverse in O(n) time. 
+    // Works only with the non-prescribed submatrix Mrr of M;
+    // entries v_p in v are not accessed,
+    // and entries sqrtMinvV_p in sqrtMinvV are not written.
+    void multiplyBySqrtMInv(const State&    s,
+        const Vector&                       v,
+        Vector&                             sqrtMinvV) const;
+
+    // Compute the mass matrix determinant O(n) time.
+    void calcDetM(const State&    s,
+        const Vector&             f,
+        Vector&                   MInvf,
+        Real*                     detM) const; // EU
+
+    // Compute the Fixman torque O(n) time.
+    void calcFixmanTorque(const State&    s,
+        const Vector&             f,
+        Vector&                   MInvf,
+        Real*                     detM) const; // EU
+
+
+   ///////////////////////////////////////////////////////////////////////
+
+
     // Calculate the mass matrix in O(n^2) time. State must have already
     // been realized to Position stage. M must be resizeable or already the
     // right size (nXn). The result is symmetric but the entire matrix is

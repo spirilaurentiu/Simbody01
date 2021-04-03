@@ -261,6 +261,88 @@ public:
         allA_GB[0] = 0;
     }
 
+
+   /////////////////////////////////////////////////////////////////
+   //  Laurentiu
+
+    
+    // Outward pass must make sure V_GB[0] is zero so it can be propagated
+    // outwards properly.
+    void multiplyBySqrtMInvPassOutward(
+        const SBInstanceCache&,
+        const SBTreePositionCache&,
+        const SBArticulatedBodyInertiaCache&,
+        const Real*                 epsilonTmp,
+        SpatialVec*                 allV_GB,
+        Real*                       allU) const override
+    {
+        allV_GB[0] = 0;
+    }
+    
+    void calcDetMPass1Inward(
+        const SBInstanceCache&     ic,
+        const SBTreePositionCache& pc,
+        const SBArticulatedBodyInertiaCache&,
+        //const SBDynamicsCache&,
+        const Real*                f,
+        SpatialVec*                allZ,
+        SpatialVec*                allZPlus,
+        Real*                      allEpsilon,
+        Real*                      detM) const
+    {
+    } 
+
+    // Outward pass must make sure A_GB[0] is zero so it can be propagated
+    // outwards properly.
+    // EU
+    void calcDetMPass2Outward(
+        const SBInstanceCache&,
+        const SBTreePositionCache&,
+        const SBArticulatedBodyInertiaCache&,
+        //const SBDynamicsCache&,
+        const Real*                 epsilonTmp,
+        SpatialVec*                 allA_GB,
+        Real*                       allUDot,
+        Real*                       detM) const
+    {
+        allA_GB[0] = 0;
+    }
+
+    void calcFixmanTorquePass1Inward(
+        const SBInstanceCache&     ic,
+        const SBTreePositionCache& pc,
+        const SBArticulatedBodyInertiaCache&,
+        const SBDynamicsCache&,
+        const Real*                f,
+        SpatialVec*                allZ,
+        SpatialVec*                allZPlus,
+        Real*                      allEpsilon,
+        Real*                      detM) const
+    {
+    } 
+
+    // Outward pass must make sure A_GB[0] is zero so it can be propagated
+    // outwards properly.
+    // EU
+    void calcFixmanTorquePass2Outward(
+        const SBInstanceCache&,
+        const SBTreePositionCache&,
+        const SBArticulatedBodyInertiaCache&,
+        const SBDynamicsCache&,
+        const Real*                 epsilonTmp,
+        SpatialVec*                 allA_GB,
+        Real*                       allUDot,
+        Real*                       detM) const
+    {
+        allA_GB[0] = 0;
+    }
+
+
+
+   //////////////////////////////////////////////////////////////////
+
+
+
     // Also serves as pass 1 for inverse dynamics.
     void calcBodyAccelerationsFromUdotOutward(
         const SBTreePositionCache&  pc,

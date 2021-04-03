@@ -419,6 +419,69 @@ void multiplyByMInvPass2Outward(
     SpatialVec*                 allA_GB,
     Real*                       allUDot) const override;
 
+
+
+
+/////////////////////////////////////////////////////////////////////
+// Laurentiu
+
+void multiplyBySqrtMInvPassOutward(
+    const SBInstanceCache&      ic,
+    const SBTreePositionCache&  pc,
+    const SBArticulatedBodyInertiaCache&,
+    const Real*                 epsilonTmp,
+    SpatialVec*                 allV_GB,
+    Real*                       allU) const override;
+
+void calcDetMPass1Inward(
+    const SBInstanceCache&      ic,
+    const SBTreePositionCache&  pc,
+    const SBArticulatedBodyInertiaCache&,
+    //const SBDynamicsCache&      dc,
+    const Real*                 f,
+    SpatialVec*                 allZ,
+    SpatialVec*                 allGepsilon,
+    Real*                       allEpsilon,
+    Real*                       detM) const;
+
+void calcDetMPass2Outward(
+    const SBInstanceCache&      ic,
+    const SBTreePositionCache&  pc,
+    const SBArticulatedBodyInertiaCache&,
+    //const SBDynamicsCache&      dc,
+    const Real*                 epsilonTmp,
+    SpatialVec*                 allA_GB,
+    Real*                       allUDot,
+    Real*                       detM) const;
+
+void calcFixmanTorquePass1Inward(
+    const SBInstanceCache&      ic,
+    const SBTreePositionCache&  pc,
+    const SBArticulatedBodyInertiaCache&,
+    const SBDynamicsCache&      dc,
+    const Real*                 f,
+    SpatialVec*                 allZ,
+    SpatialVec*                 allGepsilon,
+    Real*                       allEpsilon,
+    Real*                       detM) const;
+
+void calcFixmanTorquePass2Outward(
+    const SBInstanceCache&      ic,
+    const SBTreePositionCache&  pc,
+    const SBArticulatedBodyInertiaCache&,
+    const SBDynamicsCache&      dc,
+    const Real*                 epsilonTmp,
+    SpatialVec*                 allA_GB,
+    Real*                       allUDot,
+    Real*                       detM) const;
+
+
+
+
+/////////////////////////////////////////////////////////////////////
+
+
+
 // Also serves as pass 1 for inverse dynamics.
 void calcBodyAccelerationsFromUdotOutward(
     const SBTreePositionCache&  pc,
