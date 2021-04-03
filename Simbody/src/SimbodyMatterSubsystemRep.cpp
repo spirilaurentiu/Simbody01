@@ -5418,7 +5418,7 @@ void SimbodyMatterSubsystemRep::multiplyBySqrtMInv(const State& s,
     const Vector&                                               v,
     Vector&                                                     sqrtMinvV) const
 {
-    STUDYN("SimbodyMatterSubsystemRep::multiplyBySqrtMInv base-to-tip");
+    //STUDYN("SimbodyMatterSubsystemRep::multiplyBySqrtMInv base-to-tip");
     const SBInstanceCache&                  ic  = getInstanceCache(s);
     const SBTreePositionCache&              tpc = getTreePositionCache(s);
     realizeArticulatedBodyInertias(s); // (may already have been realized)
@@ -5468,7 +5468,7 @@ void SimbodyMatterSubsystemRep::calcDetM(const State& s,
     Vector&                                           MInvf,
     Real*                                             detM) const 
 {
-    STUDYN("SimbodyMatterSubsystemRep::calcDetM base-to-tip");
+    //STUDYN("SimbodyMatterSubsystemRep::calcDetM base-to-tip");
     const SBInstanceCache&                  ic  = getInstanceCache(s);
     const SBTreePositionCache&              tpc = getTreePositionCache(s);
     //const SBDynamicsCache&                  dc  = getDynamicsCache(s);
@@ -5526,7 +5526,7 @@ void SimbodyMatterSubsystemRep::calcFixmanTorque(const State& s,
     Vector&                                            MInvf,
     Real*                                              detM) const 
 {
-    STUDYN("SimbodyMatterSubsystemRep::calcFixmanTorque base-to-tip");
+    //STUDYN("SimbodyMatterSubsystemRep::calcFixmanTorque base-to-tip");
     realizeY(s); // Need this
 
     const SBInstanceCache&                  ic  = getInstanceCache(s);

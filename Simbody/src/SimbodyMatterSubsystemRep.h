@@ -636,6 +636,13 @@ public:
     // are not written.
     void calcMInv(const State& s, Matrix& MInv) const;
 
+    /////////////////////////////////////////////////////////////////////
+    // Laurentiu
+
+    void calcMInvSqrt(const State& s, Matrix& MInv) const;
+
+    /////////////////////////////////////////////////////////////////////
+
     void calcTreeResidualForces(const State&,
         const Vector&               appliedMobilityForces,
         const Vector_<SpatialVec>&  appliedBodyForces,

@@ -1453,6 +1453,14 @@ M^-1. Instead, call the method calcMInv() which can produce M^-1 directly.
 @see multiplyByM(), calcMInv() **/
 void calcM(const State&, Matrix& M) const;
 
+
+
+/////////////////////////////////////////////////////////////////////
+// Laurentiu
+void calcMInvSqrt(const State&, Matrix& MInvSqrt) const;
+/////////////////////////////////////////////////////////////////////
+
+
 /** This operator explicitly calculates the inverse of the part of the system
 mobility-space mass matrix corresponding to free (non-prescribed)
 mobilities. The returned matrix is always n X n, but rows and columns 
