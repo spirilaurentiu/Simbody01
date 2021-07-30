@@ -393,7 +393,7 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
     ##set(GCC_OPT_ENABLE "-funroll-loops")
 
     # -fprofile-generate -fprofile-use -flto
-    set(GCC_OPT_ENABLE "-march=native")
+    set(GCC_OPT_ENABLE "-march=native -Wl,-q,-emit-relocs")
 
     # If you know of optimization bugs that affect Simbody in particular
     # gcc versions, this is the place to turn off those optimizations.
