@@ -694,7 +694,8 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcDetMPass2Outward(
 
     const Mat<dof,dof>& D  = getD(abc);
     //std::cout << "RigidBodyNodeSpec::calcDetMPass2Outward D: "<< D << std::endl;
-    (*detM) *= SimTK::det(D);
+    //(*detM) *= SimTK::det(D);
+    (*detM) += std::log(SimTK::det(D));
 
     const HType&        G   = getG(abc);
 

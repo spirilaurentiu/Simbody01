@@ -5498,7 +5498,8 @@ void SimbodyMatterSubsystemRep::calcDetM(const State& s,
 
     for(int i=0; i<nu; i++){eps[i] = fPtr[i];}
 
-    *detM = 1.0;
+    //*detM = 1.0; // original space
+    *detM = 0.0; // log space
     for (int i=0 ; i<(int)rbNodeLevels.size() ; i++){
         for (int j=0 ; j<(int)rbNodeLevels[i].size() ; j++) {
             const RigidBodyNode& node = *rbNodeLevels[i][j];
