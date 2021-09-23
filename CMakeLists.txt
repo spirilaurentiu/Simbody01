@@ -14,11 +14,11 @@ if(MSVC)
     # To properly support Visual Studio 2015.
     set(SIMBODY_REQUIRED_CMAKE_VERSION 3.1.3)
 else()
-    set(SIMBODY_REQUIRED_CMAKE_VERSION 2.8.10)
+    set(SIMBODY_REQUIRED_CMAKE_VERSION 3.9.4)
 endif()
 cmake_minimum_required(VERSION ${SIMBODY_REQUIRED_CMAKE_VERSION})
 
-project(Simbody)
+project(Simbody C CXX)
 
 # At this point CMake will have set CMAKE_INSTALL_PREFIX to /usr/local on Linux
 # or appropriate ProgramFiles directory on Windows, for example
@@ -365,75 +365,73 @@ if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
             set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17")
             set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
         else()
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
             if(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
             endif()
         endif()
-    else() # not APPLE
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     endif()
 
-    if(inst_set_to_use)
-        string(TOLOWER ${inst_set_to_use} GCC_INST_SET)
-        set(GCC_INST_SET "-m${GCC_INST_SET}")
-    else()
-        set(GCC_INST_SET)
-    endif()
+    # if(inst_set_to_use)
+    #     string(TOLOWER ${inst_set_to_use} GCC_INST_SET)
+    #     set(GCC_INST_SET "-m${GCC_INST_SET}")
+    # else()
+    #     # set(GCC_INST_SET)
+    #     set(GCC_INST_SET "-march=native -mtune=native")
+    # endif()
 
     # Get the gcc or clang version number in major.minor.build format
     execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                     OUTPUT_VARIABLE GCC_VERSION)
 
-    # Unrolling fixed-count loops was a useful optimization for Simmatrix
-    # in earlier gcc versions.
-    # Doesn't have a big effect for current compiler crop and may be
-    # pushing our luck with optimizer bugs. So let the compilers decide
-    # how to handle loops instead.
-    ##set(GCC_OPT_ENABLE "-funroll-loops")
+    # # Unrolling fixed-count loops was a useful optimization for Simmatrix
+    # # in earlier gcc versions.
+    # # Doesn't have a big effect for current compiler crop and may be
+    # # pushing our luck with optimizer bugs. So let the compilers decide
+    # # how to handle loops instead.
+    # ##set(GCC_OPT_ENABLE "-funroll-loops")
 
-    # -fprofile-generate -fprofile-use -flto
-    set(GCC_OPT_ENABLE "-march=native -Wl,-q,-emit-relocs")
+    # set(GCC_OPT_ENABLE "${ROBO_EXTRA_FLAGS}")
 
-    # If you know of optimization bugs that affect Simbody in particular
-    # gcc versions, this is the place to turn off those optimizations.
-    set(GCC_OPT_DISABLE)
+    # # If you know of optimization bugs that affect Simbody in particular
+    # # gcc versions, this is the place to turn off those optimizations.
+    # set(GCC_OPT_DISABLE)
 
-    # C++
-    set(BUILD_CXX_FLAGS_DEBUG          "-g ${GCC_INST_SET}")
-    set(BUILD_CXX_FLAGS_RELEASE
-      "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
-    set(BUILD_CXX_FLAGS_RELWITHDEBINFO
-    "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
-    set(BUILD_CXX_FLAGS_MINSIZEREL     "-DNDEBUG -Os ${GCC_INST_SET}")
+    # # C++
+    # set(BUILD_CXX_FLAGS_DEBUG          "-g ${GCC_INST_SET}")
+    # set(BUILD_CXX_FLAGS_RELEASE
+    #   "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    # set(BUILD_CXX_FLAGS_RELWITHDEBINFO
+    # "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    # set(BUILD_CXX_FLAGS_MINSIZEREL     "-DNDEBUG -Os ${GCC_INST_SET}")
 
-    # C
-    set(BUILD_C_FLAGS_DEBUG            "-g ${GCC_INST_SET}")
-    set(BUILD_C_FLAGS_RELEASE
-      "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
-    set(BUILD_C_FLAGS_RELWITHDEBINFO
-    "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
-    set(BUILD_C_FLAGS_MINSIZEREL       "-DNDEBUG -Os ${GCC_INST_SET}")
+    # # C
+    # set(BUILD_C_FLAGS_DEBUG            "-g ${GCC_INST_SET}")
+    # set(BUILD_C_FLAGS_RELEASE
+    #   "-DNDEBUG -O3 ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    # set(BUILD_C_FLAGS_RELWITHDEBINFO
+    # "-DNDEBUG -O3 -g ${GCC_OPT_ENABLE} ${GCC_OPT_DISABLE} ${GCC_INST_SET}")
+    # set(BUILD_C_FLAGS_MINSIZEREL       "-DNDEBUG -Os ${GCC_INST_SET}")
 
-    # C++
-    set(CMAKE_CXX_FLAGS_DEBUG ${BUILD_CXX_FLAGS_DEBUG}
-        CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
-    set(CMAKE_CXX_FLAGS_RELEASE ${BUILD_CXX_FLAGS_RELEASE}
-        CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${BUILD_CXX_FLAGS_RELWITHDEBINFO}
-        CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
-    set(CMAKE_CXX_FLAGS_MINSIZEREL ${BUILD_CXX_FLAGS_MINSIZEREL}
-        CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
+    # # C++
+    # set(CMAKE_CXX_FLAGS_DEBUG ${BUILD_CXX_FLAGS_DEBUG}
+    #     CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
+    # set(CMAKE_CXX_FLAGS_RELEASE ${BUILD_CXX_FLAGS_RELEASE}
+    #     CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
+    # set(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${BUILD_CXX_FLAGS_RELWITHDEBINFO}
+    #     CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
+    # set(CMAKE_CXX_FLAGS_MINSIZEREL ${BUILD_CXX_FLAGS_MINSIZEREL}
+    #     CACHE STRING "Can't change here -- see BUILD_CXX..." FORCE)
 
-    # C
-    set(CMAKE_C_FLAGS_DEBUG ${BUILD_C_FLAGS_DEBUG}
-        CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
-    set(CMAKE_C_FLAGS_RELEASE ${BUILD_C_FLAGS_RELEASE}
-        CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO ${BUILD_C_FLAGS_RELWITHDEBINFO}
-        CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
-    set(CMAKE_C_FLAGS_MINSIZEREL ${BUILD_C_FLAGS_MINSIZEREL}
-        CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
+    # # C
+    # set(CMAKE_C_FLAGS_DEBUG ${BUILD_C_FLAGS_DEBUG}
+    #     CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
+    # set(CMAKE_C_FLAGS_RELEASE ${BUILD_C_FLAGS_RELEASE}
+    #     CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
+    # set(CMAKE_C_FLAGS_RELWITHDEBINFO ${BUILD_C_FLAGS_RELWITHDEBINFO}
+    #     CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
+    # set(CMAKE_C_FLAGS_MINSIZEREL ${BUILD_C_FLAGS_MINSIZEREL}
+    #     CACHE STRING "Can't change here -- see BUILD_C..." FORCE)
 
     set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
     if(SIMBODY_COVERAGE)
@@ -716,6 +714,8 @@ elseif(APPLE)
 else()
     set(PKGCONFIG_PLATFORM_LIBS     "-llapack -lblas -lpthread -lrt -ldl -lm")
 endif()
+
+message("${PKGCONFIG_PLATFORM_LIBS}")
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/pkgconfig/simbody.pc.in
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/pkgconfig/simbody.pc @ONLY)
