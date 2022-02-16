@@ -1302,6 +1302,17 @@ MobilizedBody::BendStretch::BendStretch
                                                    *this);
 }
 
+    // Needed in GMOL - BENDSTRETCH
+    const Vec2& MobilizedBody::BendStretch::getDefaultQ() const {
+        return getImpl().defaultQ;
+    }
+    MobilizedBody::BendStretch& MobilizedBody::BendStretch::setDefaultQ(const Vec2& q) {
+        getImpl().invalidateTopologyCache();
+        updImpl().defaultQ = q;
+        return *this;
+    }
+    // GMOL END - BENDSTRETCH
+
 SimTK_INSERT_DERIVED_HANDLE_DEFINITIONS(MobilizedBody::BendStretch, 
     MobilizedBody::BendStretchImpl, MobilizedBody);
 

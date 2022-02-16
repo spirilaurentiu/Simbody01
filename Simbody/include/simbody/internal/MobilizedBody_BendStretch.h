@@ -76,6 +76,11 @@ public:
         (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
     }
 
+    // Needed in GMOL
+    const Vec2& getDefaultQ() const ;
+    MobilizedBody::BendStretch& setDefaultQ(const Vec2& q) ;
+    // GMOL
+
     /** @cond **/ // Don't let doxygen see this
     SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(BendStretch, BendStretchImpl, 
                                              MobilizedBody);
