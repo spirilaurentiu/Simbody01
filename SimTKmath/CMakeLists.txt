@@ -40,58 +40,58 @@ set(SIMMATH_MINOR_VERSION ${SIMBODY_MINOR_VERSION})
 set(SIMMATH_PATCH_VERSION ${SIMBODY_PATCH_VERSION})
 
 
-# Report the version number to the CMake UI. Don't include the
-# patch version if it is zero.
-set(PATCH_VERSION_STRING)
-if(SIMMATH_PATCH_VERSION)
-    set(PATCH_VERSION_STRING ".${SIMMATH_PATCH_VERSION}")
-endif()
+# # Report the version number to the CMake UI. Don't include the
+# # patch version if it is zero.
+# set(PATCH_VERSION_STRING)
+# if(SIMMATH_PATCH_VERSION)
+#     set(PATCH_VERSION_STRING ".${SIMMATH_PATCH_VERSION}")
+# endif()
 
-set(SIMMATH_VERSION
-    "${SIMMATH_MAJOR_VERSION}.${SIMMATH_MINOR_VERSION}${PATCH_VERSION_STRING}")
+# set(SIMMATH_VERSION
+#     "${SIMMATH_MAJOR_VERSION}.${SIMMATH_MINOR_VERSION}${PATCH_VERSION_STRING}")
 
-# This is the suffix if we're building and depending on versioned libraries.
-set(VN "_${SIMMATH_VERSION}")
+# # This is the suffix if we're building and depending on versioned libraries.
+# set(VN "_${SIMMATH_VERSION}")
 
 set(SIMMATH_COPYRIGHT_YEARS "2005-10")
 
 # underbar separated list of dotted authors, no spaces or commas
 set(SIMMATH_AUTHORS         "Jack.Middleton_Michael.Sherman")
 
-set(SIMMATH_SVN_REVISION ${SIMBODY_SVN_REVISION})
+# set(SIMMATH_SVN_REVISION ${SIMBODY_SVN_REVISION})
 
 add_definitions(-DSimTK_SIMMATH_LIBRARY_NAME=${SimTKMATH_LIBRARY_NAME}
                 -DSimTK_SIMMATH_MAJOR_VERSION=${SIMMATH_MAJOR_VERSION}
                 -DSimTK_SIMMATH_MINOR_VERSION=${SIMMATH_MINOR_VERSION}
         -DSimTK_SIMMATH_PATCH_VERSION=${SIMMATH_PATCH_VERSION})
 
-if(NEED_QUOTES)
-   add_definitions(-DSimTK_SIMMATH_SVN_REVISION="${SIMMATH_SVN_REVISION}"
-                   -DSimTK_SIMMATH_COPYRIGHT_YEARS="${SIMMATH_COPYRIGHT_YEARS}"
-                   -DSimTK_SIMMATH_AUTHORS="${SIMMATH_AUTHORS}")
-else(NEED_QUOTES)
-   add_definitions(-DSimTK_SIMMATH_SVN_REVISION=${SIMMATH_SVN_REVISION}
-                   -DSimTK_SIMMATH_COPYRIGHT_YEARS=${SIMMATH_COPYRIGHT_YEARS}
-                   -DSimTK_SIMMATH_AUTHORS=${SIMMATH_AUTHORS})
-endif(NEED_QUOTES)
+# if(NEED_QUOTES)
+#    add_definitions(-DSimTK_SIMMATH_SVN_REVISION="${SIMMATH_SVN_REVISION}"
+#                    -DSimTK_SIMMATH_COPYRIGHT_YEARS="${SIMMATH_COPYRIGHT_YEARS}"
+#                    -DSimTK_SIMMATH_AUTHORS="${SIMMATH_AUTHORS}")
+# else(NEED_QUOTES)
+#    add_definitions(-DSimTK_SIMMATH_SVN_REVISION=${SIMMATH_SVN_REVISION}
+#                    -DSimTK_SIMMATH_COPYRIGHT_YEARS=${SIMMATH_COPYRIGHT_YEARS}
+#                    -DSimTK_SIMMATH_AUTHORS=${SIMMATH_AUTHORS})
+# endif(NEED_QUOTES)
 
-# -DSimTK_SIMMATH_TYPE has to be defined in the target subdirectories.
-# -Dsimmath_EXPORTS defined automatically when Windows DLL build is being done.
+# # -DSimTK_SIMMATH_TYPE has to be defined in the target subdirectories.
+# # -Dsimmath_EXPORTS defined automatically when Windows DLL build is being done.
 
-set(SHARED_TARGET ${SimTKMATH_LIBRARY_NAME})
-set(STATIC_TARGET ${SimTKMATH_LIBRARY_NAME}_static)
-set(SHARED_TARGET_VN ${SimTKMATH_LIBRARY_NAME}${VN})
-set(STATIC_TARGET_VN ${SimTKMATH_LIBRARY_NAME}${VN}_static)
+# set(SHARED_TARGET ${SimTKMATH_LIBRARY_NAME})
+# set(STATIC_TARGET ${SimTKMATH_LIBRARY_NAME}_static)
+# set(SHARED_TARGET_VN ${SimTKMATH_LIBRARY_NAME}${VN})
+# set(STATIC_TARGET_VN ${SimTKMATH_LIBRARY_NAME}${VN}_static)
 
-## Test against the unversioned libraries if they are being built;
-## otherwise against the versioned libraries.
-if(BUILD_UNVERSIONED_LIBRARIES)
-    set(TEST_SHARED_TARGET ${SHARED_TARGET})
-    set(TEST_STATIC_TARGET ${STATIC_TARGET})
-else(BUILD_UNVERSIONED_LIBRARIES)
-    set(TEST_SHARED_TARGET ${SHARED_TARGET_VN})
-    set(TEST_STATIC_TARGET ${STATIC_TARGET_VN})
-endif(BUILD_UNVERSIONED_LIBRARIES)
+# ## Test against the unversioned libraries if they are being built;
+# ## otherwise against the versioned libraries.
+# if(BUILD_UNVERSIONED_LIBRARIES)
+#     set(TEST_SHARED_TARGET ${SHARED_TARGET})
+#     set(TEST_STATIC_TARGET ${STATIC_TARGET})
+# else(BUILD_UNVERSIONED_LIBRARIES)
+#     set(TEST_SHARED_TARGET ${SHARED_TARGET_VN})
+#     set(TEST_STATIC_TARGET ${STATIC_TARGET_VN})
+# endif(BUILD_UNVERSIONED_LIBRARIES)
 
 # These are all the places to search for header files which are
 # to be part of the API.
@@ -166,34 +166,38 @@ set(SOURCE_INCLUDE_FILES ${SOURCE_INCLUDE_FILES} ${incl_files})
 # Add low-level source include directories if any.
 include_directories(${SOURCE_INCLUDE_DIRS})
 
-#
-# Installation
-#
+# #
+# # Installation
+# #
 
-# libraries are installed from their subdirectories; headers here
+# # libraries are installed from their subdirectories; headers here
 
-# install headers
-file(GLOB CORE_HEADERS     include/*.h                  */include/*.h)
-file(GLOB TOP_HEADERS      include/simmath/*.h          */include/simmath/*.h)
-file(GLOB INTERNAL_HEADERS include/simmath/internal/*.h */include/simmath/internal/*.h)
+# # install headers
+# file(GLOB CORE_HEADERS     include/*.h                  */include/*.h)
+# file(GLOB TOP_HEADERS      include/simmath/*.h          */include/simmath/*.h)
+# file(GLOB INTERNAL_HEADERS include/simmath/internal/*.h */include/simmath/internal/*.h)
 
-install(FILES ${CORE_HEADERS} DESTINATION ${SIMBODY_INCLUDE_INSTALL_DIR})
-install(FILES ${TOP_HEADERS} DESTINATION ${SIMBODY_INCLUDE_INSTALL_DIR}/simmath)
-install(FILES ${INTERNAL_HEADERS} DESTINATION ${SIMBODY_INCLUDE_INSTALL_DIR}/simmath/internal)
+# install(FILES ${CORE_HEADERS} DESTINATION ${SIMBODY_INCLUDE_INSTALL_DIR})
+# install(FILES ${TOP_HEADERS} DESTINATION ${SIMBODY_INCLUDE_INSTALL_DIR}/simmath)
+# install(FILES ${INTERNAL_HEADERS} DESTINATION ${SIMBODY_INCLUDE_INSTALL_DIR}/simmath/internal)
 
-file(GLOB SIMMATH_DOCS doc/*.pdf doc/*.txt doc/*.md)
-install(FILES ${SIMMATH_DOCS} DESTINATION ${CMAKE_INSTALL_DOCDIR})
+# file(GLOB SIMMATH_DOCS doc/*.pdf doc/*.txt doc/*.md)
+# install(FILES ${SIMMATH_DOCS} DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
-# These are at the end because we want them processed after
-# all the various variables have been set above.
+# # These are at the end because we want them processed after
+# # all the various variables have been set above.
 
-if(BUILD_STATIC_LIBRARIES)
-    add_subdirectory( staticTarget )
-endif()
-if(BUILD_DYNAMIC_LIBRARIES)
-    add_subdirectory( sharedTarget )
-endif()
+# if(BUILD_STATIC_LIBRARIES)
+#     add_subdirectory( staticTarget )
+# endif()
+# if(BUILD_DYNAMIC_LIBRARIES)
+#     add_subdirectory( sharedTarget )
+# endif()
 
-if( BUILD_TESTING )
-    add_subdirectory( tests )
-endif( BUILD_TESTING )
+# if( BUILD_TESTING )
+#     add_subdirectory( tests )
+# endif( BUILD_TESTING )
+
+add_library(${SimTKMATH_LIBRARY_NAME} STATIC 
+    ${SOURCE_FILES} ${SOURCE_INCLUDE_FILES} 
+    ${API_ABS_INCLUDE_FILES} )
