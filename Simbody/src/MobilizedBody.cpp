@@ -204,6 +204,12 @@ MobilizedBody& MobilizedBody::setDefaultOutboardFrame(const Transform& X_BM) {
     return *this;
 }
 
+void MobilizedBody::updateDefaultFrames(const Transform& X_PF, const Transform& X_BM) {
+    // getImpl().invalidateTopologyCache();
+    updImpl().defaultInboardFrame = X_PF;
+    updImpl().defaultOutboardFrame = X_BM;
+}
+
 const Transform& MobilizedBody::getDefaultInboardFrame() const {
     return getImpl().defaultInboardFrame;
 }

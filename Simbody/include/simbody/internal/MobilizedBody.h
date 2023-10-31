@@ -1598,6 +1598,8 @@ to this %MobilizedBody is returned so that this can be chained like an
 assignment operator. **/
 MobilizedBody& setDefaultOutboardFrame(const Transform& X_BM);
 
+void updateDefaultFrames(const Transform& X_PF, const Transform& X_BM);
+
 /** Return a reference to this mobilizer's default for the frame F fixed on the 
 parent (inboard) body P, as the fixed Transform from P's body frame to the frame
 F fixed to P. This default Transform is stored with the %MobilizedBody object, 
