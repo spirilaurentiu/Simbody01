@@ -409,6 +409,34 @@ public:
     static Transform randTransform() {
         return Transform(randRotation(), randVec3());
     }
+
+
+	// __new__
+	static void __newFunction__(void){
+		std::cout << "__newFunction__\n";
+	}
+
+    /*! <-- Print Transform
+    --> */
+    static void PrintTransform(SimTK::Transform T, int decimal_places,
+        std::string header = "unknown", std::string rowPrefix = "")
+    {
+        std::cout << header << std::endl;
+        const SimTK::Mat44 M = T.toMat44();
+        for(int i = 0; i < 4; i++){
+            std::cout << rowPrefix;
+            for(int k = 0; k < 4; k++){
+                std::cout
+                    << std::setw(6 + decimal_places) << std::fixed
+                    << std::setprecision(decimal_places)			
+                    << M(i, k) << " ";
+            }
+            std::cout << std::endl;
+        }
+    }    
+	// __end__ __new__
+
+
 private:
     const double startCpuTime;
     const double startRealTime;

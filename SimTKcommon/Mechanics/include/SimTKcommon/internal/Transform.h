@@ -609,8 +609,6 @@ operator<<(std::ostream&, const Transform_<P>&);
 template <class P> SimTK_SimTKCOMMON_EXPORT std::ostream&
 operator<<(std::ostream&, const InverseTransform_<P>&);
 
-
-
 //------------------------------------------------------------------------------
 }  // End of namespace SimTK
 
