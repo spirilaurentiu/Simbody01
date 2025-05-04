@@ -418,6 +418,23 @@ public:
 
     /*! <-- Print Transform
     --> */
+    static void PrintVec3(SimTK::Vec3 V, int decimal_places,
+        std::string header = "unknown", std::string rowPrefix = "")
+    {
+        std::cout << header << std::endl;
+            std::cout << rowPrefix;
+            for(int k = 0; k < 3; k++){
+                std::cout
+                    << std::setw(6 + decimal_places) << std::fixed
+                    << std::setprecision(decimal_places)			
+                    << V(k) << " ";
+            }
+            std::cout << std::endl;
+    }    
+	// __end__ __new__
+
+    /*! <-- Print Transform
+    --> */
     static void PrintTransform(SimTK::Transform T, int decimal_places,
         std::string header = "unknown", std::string rowPrefix = "")
     {
