@@ -153,7 +153,7 @@ static int getScalingFactor() {
         return 1;
     #endif
 }
-
+; // recompile ls 1
 static void computeBoundingSphereForVertices(const vector<float>& vertices, float& radius, fVec3& center) {
     fVec3 lower(vertices[0], vertices[1], vertices[2]);
     fVec3 upper = lower;

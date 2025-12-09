@@ -971,6 +971,9 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::realizeYOutward
     const SBArticulatedBodyInertiaCache&    abc,
     SBDynamicsCache&                        dc) const
 {
+    std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << "isUKnown(SBInstanceCache) " << isUKnown(ic) << std::endl << std::flush;
+    std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << "isUDotKnown(SBInstanceCache) " << isUDotKnown(ic) << std::endl << std::flush;
+
     if (isUDotKnown(ic)) {
         //TODO: (sherm 090810) is this right?
         assert(false);

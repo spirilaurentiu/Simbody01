@@ -107,6 +107,19 @@ bool VerletIntegratorRep::attemptDAEStep
     const Vector u1_est = u0 + h*udot0;
     const Vector z1_est = z0 + h*zdot0;
 
+    // std::cout << "VerletIntegratorRep::attemptDAEStep: "
+    //           << "h " << h 
+    //           << " q0 " << q0 << std::endl
+    //           << " u0 " << u0 << std::endl
+    //           << " z0 " << z0 << std::endl
+    //           << " qdot0 " << qdot0 << std::endl
+    //           << " udot0 " << udot0 << std::endl
+    //           << " zdot0 " << zdot0 << std::endl
+    //           << " qdotdot0 " << qdotdot0 << std::endl
+    //           << " u1_est " << u1_est << std::endl
+    //           << " z1_est " << z1_est << std::endl
+    //           << " updQ " << q0 + h*qdot0 + (h*h/2)*qdotdot0 << std::endl;
+
     advanced.updU() = u1_est; // u's and z's will change in advanced below
     advanced.updZ() = z1_est;
 
@@ -156,6 +169,7 @@ bool VerletIntegratorRep::attemptDAEStep
 
         // Get these references now -- as soon as we change u or z they
         // will be invalid.
+        //std::cout << "VerletIntegratorRep::attemptDAEStep " << advanced.getUDot() << std::endl << std::flush;
         const Vector& udot1 = advanced.getUDot();
         const Vector& zdot1 = advanced.getZDot();
         
