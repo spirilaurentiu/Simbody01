@@ -90,6 +90,11 @@ void TimeStepper::setReportAllSignificantStates(bool b) {
 }
 
 
+const void TimeStepper::PrintStages(void) const
+{
+    const Integrator& integ = getIntegrator();
+} // FIXTORROLL
+
     ////////////////////////////////////////
     // IMPLEMENTATION OF TIME STEPPER REP //
     ////////////////////////////////////////

@@ -115,6 +115,9 @@ public:
      * immediately.
      */
     Integrator::SuccessfulStepStatus stepTo(Real time);
+
+    const void PrintStages(void) const; // FIXTORROLL
+
 private:
     class TimeStepperRep* rep;
     friend class TimeStepperRep;
