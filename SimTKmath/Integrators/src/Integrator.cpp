@@ -311,6 +311,11 @@ int Integrator::getMethodMaxOrder() const {
     return getRep().getMethodMaxOrder();
 }
 
+
+const void Integrator::PrintStages(void) const {
+    getRep().PrintStages();
+} // FIXTORROLL
+
     //////////////////////////////////////
     // IMPLEMENTATION OF INTEGRATOR REP //
     //////////////////////////////////////

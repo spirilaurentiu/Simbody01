@@ -949,6 +949,12 @@ protected:
     int getNumQProjectionFailures() const {return statsQProjectionFailures;} 
     int getNumUProjectionFailures() const {return statsUProjectionFailures;} 
 
+    const void PrintStages() const {
+        // const State& advState = getAdvancedState();
+        const Stage& advStage = advancedState.getSystemStage();
+        std::cout << "StageInfo::advState " << advStage << std::endl;
+    } // FIXTORROLL
+
 private:
     class EventSorter {
     public:
