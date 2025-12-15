@@ -136,7 +136,6 @@ public:
     void setMyHandle(System& h) {myHandle = &h;}
     void clearMyHandle() {myHandle=0;}
 
-
     bool systemTopologyHasBeenRealized() const 
     {   return systemTopologyRealized; }
 

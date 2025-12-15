@@ -971,10 +971,8 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::realizeYOutward
     const SBArticulatedBodyInertiaCache&    abc,
     SBDynamicsCache&                        dc) const
 {
-    std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << "isUKnown(SBInstanceCache) " << isUKnown(ic) << std::endl << std::flush;
-    std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << "isUDotKnown(SBInstanceCache) " << isUDotKnown(ic) << std::endl << std::flush;
-
     if (isUDotKnown(ic)) {
+        std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << " assert(false) isUDotKnown(SBInstanceCache) " << isUDotKnown(ic) << std::endl << std::flush;
         //TODO: (sherm 090810) is this right?
         assert(false);
         //updY(dc) = (~getPhi(pc) * parent->getY(dc)) * getPhi(pc); // rigid shift
@@ -990,7 +988,7 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::realizeYOutward
     SpatialMat tauBar = getG(abc)*~getH(pc);// 11*dof^2 flops
     tauBar(0,0) -= 1; // subtract identity matrix (only touches diags: 3 flops)
     tauBar(1,1) -= 1; //    "    (3 flops)
-    SpatialMat psi = getPhi(pc)*tauBar; // ~100 flops
+    SpatialMat psi = getPhi(pc)*tauBar; // ~100 flops (eq. 4.2 1991 Rodriguez)
 
     // TODO: this is very expensive (~1000 flops?) Could cut be at least half
     // by exploiting symmetry. Also, does Psi have special structure?

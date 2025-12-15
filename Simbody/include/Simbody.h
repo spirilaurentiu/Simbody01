@@ -39,4 +39,8 @@ namespace, or (where a namespace can't be used) prefixed by "SimTK_". **/
 #include "SimTKmath.h"
 #include "SimTKsimbody.h"
 
+#ifndef STUDYSTAGES
+#define STUDYSTAGES 1
+#endif
+
 #endif // SimTK_SIMBODY_SIMBODY_H_

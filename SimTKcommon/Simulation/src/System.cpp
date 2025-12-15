@@ -164,7 +164,7 @@ void System::setSystemTopologyCacheVersion(StageVersion topoVersion) const
 void System::invalidateSystemTopologyCache() const
 {   getSystemGuts().invalidateSystemTopologyCache(); }
 
-
+const void System::PrintStages(void) const {return getSystemGuts().PrintStages();} // FIXTORROLL
 
 const State& System::realizeTopology() const {return getSystemGuts().realizeTopology();}
 void System::realizeModel(State& s) const {getSystemGuts().realizeModel(s);}
@@ -338,6 +338,40 @@ System::Guts* System::Guts::clone() const {
     return cloneImpl();
 }
 
+const void System::Guts::PrintStages(void) const {
+    
+    if (!systemTopologyHasBeenRealized()) {
+        std::cout << " System topology has NOT been realized yet." << std::endl << std::flush;
+        return;
+    }
+
+    State& defaultState = getRep().defaultState; // mutable
+
+    std::cout << "StageInfo::Subsystems stages in default State:";
+    std::cout <<" (SystemTopologyVersion "<< getRep().getSystemTopologyCacheVersion() <<")";
+
+    for (SubsystemIndex i(0); i<getNumSubsystems(); ++i){
+        std::cout <<" (" << i;
+        std::cout <<" "<< getRep().subsystems[i].getName();
+        std::cout <<" "<< getRep().subsystems[i].getVersion() <<" "<< getRep().getSystemTopologyCacheVersion();
+        std::cout <<" "<< getRep().subsystems[i].getStage(defaultState);
+        std::cout <<")";
+    }
+    std::cout << std::endl;
+
+    std::cout << "StageInfo::System realizations of each Stage To M I Ti P V D A R";
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Topology] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Model] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Instance] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Time] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Position] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Velocity] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Dynamics] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Acceleration] ;
+    std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Report];
+    std::cout << std::endl;
+
+} // FIXTORROLL
 
 
 //------------------------------------------------------------------------------

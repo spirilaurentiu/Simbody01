@@ -99,6 +99,8 @@ public:
 class Guts; // local; name is System::Guts
 
 
+const void PrintStages(void) const; // FIXTORROLL
+
 //------------------------------------------------------------------------------
 /**@name                    System-wide properties
 
@@ -109,7 +111,6 @@ it make sense to show a ground plane?). There are defaults for all of these
 parameters so you don't need to set them unless the defaults are not 
 satisfactory. **/
 /**@{**/
-
 /** This is a hint to other software as to which way this System's designer 
 considers to be "up". For visualization, this is the best direction to use as 
 the default up direction for the camera, and the opposite direction is likely to

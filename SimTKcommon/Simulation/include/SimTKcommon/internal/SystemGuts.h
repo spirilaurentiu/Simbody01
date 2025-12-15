@@ -75,6 +75,11 @@ class SimTK_SimTKCOMMON_EXPORT System::Guts {
     // This is the only data member in this class.
     GutsRep* rep; // opaque implementation of System::Guts base class.
 public:
+
+        //////////////////////
+        // CONSTRUCTION     //
+        //////////////////////
+
     // Note that this serves as a default constructor since both arguments have defaults.
     explicit Guts(const String& name="<NONAME>", 
                   const String& version="0.0.0");
@@ -127,6 +132,8 @@ public:
     // good behavior such as checking that stage requirements are met and
     // updating the stage at the end. Note that these will do nothing if
     // the System stage is already at or greater than the indicated stage.
+
+    const void PrintStages(void) const; // FIXTORROLL
 
     const State& realizeTopology() const;
     void realizeModel(State&) const;

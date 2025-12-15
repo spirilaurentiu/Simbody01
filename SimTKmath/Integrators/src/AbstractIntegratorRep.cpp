@@ -215,7 +215,6 @@ bool AbstractIntegratorRep::attemptDAEStep
 Integrator::SuccessfulStepStatus 
 AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
     try {
-      std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 1: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
       assert(initialized);
       assert(reportTime >= getState().getTime());
@@ -247,7 +246,6 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
 
       bool wasLastStep=false;
 
-      std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 2: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
       for(;;) { // MAIN STEPPING LOOP
 
@@ -390,21 +388,19 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
           // The continuous state variables will be updated below only when we 
           // make irreversible progress. Otherwise we'll use the saved ones to 
           // put things back the way we found them after any failures.
-          std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 3: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
           // Record the current time and state as the previous values.
           saveTimeAndStateAsPrevious(getAdvancedState());
-          std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 4: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
+          //std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 4: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
           // Ensure that all derivatives and other derived quantities are known,
           // including discrete state updates.
           realizeStateDerivatives(getAdvancedState());
-          std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 5: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
+          //std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 5: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
           // Record derivative information and witness function values for step 
           // restarts.
           saveStateDerivsAsPrevious(getAdvancedState());
-          std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 6: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
           // Derivatives at start of step have now been saved. We can update
           // discrete state variables whose update is not permitted to cause a
@@ -423,7 +419,6 @@ AbstractIntegratorRep::stepTo(Real reportTime, Real scheduledEventTime) {
           // Now take a step and see whether an event occurred.
           bool eventOccurred = takeOneStep(tMax, reportTime);
           //---------------------------------------------------
-          std::cout << "FIXTORROLLAbstractIntegratorRep::stepTo 7: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
           ++internalStepsTaken;
           ++statsStepsTaken;
@@ -558,8 +553,6 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
         SimTK_ERRCHK1_ALWAYS(t1 > t0, "AbstractIntegrator::takeOneStep()",
             "Unable to advance time past %g.", t0);
 
-        std::cout << "FIXTORROLLAbstractIntegratorRep::takeOneStep before attemptDAEStep: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
-
         int errOrder;
         int numIterations=1; // non-iterative methods can ignore this
         //--------------------------------------------------------------------
@@ -575,7 +568,6 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
             ++statsConvergenceTestFailures;
             statsDivergentIterations += numIterations;
         }
-        std::cout << "FIXTORROLLAbstractIntegratorRep::takeOneStep after attemptDAEStep: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
         // TODO: this isn't right for a non-error controlled integrator that
         // didn't converge, if there is such a thing.
@@ -698,7 +690,6 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
         // kind, not something we expect to be able to recover from, so this 
         // will throw an exception if it fails.
         realizeStateDerivatives(getInterpolatedState());
-        std::cout << "FIXTORROLLAbstractIntegratorRep::takeOneStep middle: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
         const Vector& eMid = getInterpolatedState().getEventTriggers();
 
@@ -767,7 +758,6 @@ bool AbstractIntegratorRep::takeOneStep(Real tMax, Real tReport)
         // will throw an exception that will kill the simulation.
         realizeStateDerivatives(getAdvancedState());
     }
-    std::cout << "FIXTORROLLAbstractIntegratorRep::takeOneStep final: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
     return true;
 }

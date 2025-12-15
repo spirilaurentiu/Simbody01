@@ -339,12 +339,10 @@ void IntegratorRep::initialize(const State& initState) {
 
     // Freeze the number and kinds of state variables.
     getSystem().realizeModel(updAdvancedState());
-    std::cout << "FIXTORROLLIntegratorRep::initialize 1: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
      
     // Freeze problem dimensions; at this point the state represents an
     // instance of a physically realizable system.
     getSystem().realize(getAdvancedState(), Stage::Instance);
-    std::cout << "FIXTORROLLIntegratorRep::initialize 2: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
     
     // Some Systems need to get control whenever time is advanced
     // successfully (and irreversibly) so that they can do discrete updates.
@@ -377,7 +375,6 @@ void IntegratorRep::initialize(const State& initState) {
     // finding a solution; we're not in a hurry here.
     realizeAndProjectKinematicsWithThrow(updAdvancedState(),
         ProjectOptions::ForceProjection, ProjectOptions::ForceFullNewton);
-    std::cout << "FIXTORROLLIntegratorRep::initialize 3: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
     // Inform any state-using System elements (especially Measures) that we 
     // are starting a simulation and give them a chance to initialize their own
@@ -408,17 +405,14 @@ void IntegratorRep::initialize(const State& initState) {
     // re-evaluation.
     updAdvancedState().autoUpdateDiscreteVariables();
     getAdvancedState().invalidateAllCacheAtOrAbove(Stage::Instance);
-    std::cout << "FIXTORROLLIntegratorRep::initialize 4: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
     // Re-realize to fill in the swapped-in update values.
     realizeStateDerivatives(getAdvancedState());
-    std::cout << "FIXTORROLLIntegratorRep::initialize 5: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
     // Record the continuous parts of this now-realized initial state as the 
     // previous state as well (previous state is used when we have to back up
     // from a failed step attempt).
     saveStateAndDerivsAsPrevious(getAdvancedState());
-    std::cout << "FIXTORROLLIntegratorRep::initialize 6: " << getAdvancedState().getSystemStage() << std::endl << std::flush;
 
     // The initial state is set so it looks like we just *completed* a step to 
     // get here. That way if the first reportTime is zero, this will get 
