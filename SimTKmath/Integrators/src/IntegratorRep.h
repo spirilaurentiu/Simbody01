@@ -950,9 +950,34 @@ protected:
     int getNumUProjectionFailures() const {return statsUProjectionFailures;} 
 
     const void PrintStages() const {
+
         // const State& advState = getAdvancedState();
         const Stage& advStage = advancedState.getSystemStage();
         std::cout << "StageInfo::advState " << advStage << std::endl;
+
+        for (SubsystemIndex i(0); i<advancedState.getNumSubsystems(); ++i){
+            std::cout <<" (" << i;
+            std::cout <<" "<< advancedState.getSubsystemName(i);
+            std::cout <<" "<< advancedState.getSubsystemVersion(i);
+            std::cout <<" "<< advancedState.getSubsystemStage(i) ;
+            std::cout <<")";
+        }
+
+        if(useInterpolatedState){
+            //const State& interState = getInterpolatedState();
+            const Stage& interStage = interpolatedState.getSystemStage();
+            std::cout << "StageInfo::interState " << advStage << std::endl;
+
+            for (SubsystemIndex i(0); i<interpolatedState.getNumSubsystems(); ++i){
+                std::cout <<" (" << i;
+                std::cout <<" "<< interpolatedState.getSubsystemName(i);
+                std::cout <<" "<< interpolatedState.getSubsystemVersion(i);
+                std::cout <<" "<< interpolatedState.getSubsystemStage(i) ;
+                std::cout <<")";
+            }
+            
+        }
+
     } // FIXTORROLL
 
 private:

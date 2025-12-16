@@ -346,8 +346,18 @@ const void System::Guts::PrintStages(void) const {
     }
 
     State& defaultState = getRep().defaultState; // mutable
+    const Stage& defStage = defaultState.getSystemStage();
+    std::cout << "StageInfo::defState " << defStage << std::endl;
 
-    std::cout << "StageInfo::Subsystems stages in default State:";
+    for (SubsystemIndex i(0); i<defaultState.getNumSubsystems(); ++i){
+        std::cout <<" (" << i;
+        std::cout <<" "<< defaultState.getSubsystemName(i);
+        std::cout <<" "<< defaultState.getSubsystemVersion(i);
+        std::cout <<" "<< defaultState.getSubsystemStage(i) ;
+        std::cout <<")";
+    }    
+
+    std::cout << "StageInfo::Subsystems stages:";
     std::cout <<" (SystemTopologyVersion "<< getRep().getSystemTopologyCacheVersion() <<")";
 
     for (SubsystemIndex i(0); i<getNumSubsystems(); ++i){
