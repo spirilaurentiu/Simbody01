@@ -116,6 +116,7 @@ public:
      */
     Integrator::SuccessfulStepStatus stepTo(Real time);
 
+    /*! <!-- Stage info --> */
     const void PrintStages(void) const; // FIXTORROLL
 
 private:

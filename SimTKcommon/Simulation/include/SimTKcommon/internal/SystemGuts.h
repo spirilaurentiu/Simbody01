@@ -133,6 +133,7 @@ public:
     // updating the stage at the end. Note that these will do nothing if
     // the System stage is already at or greater than the indicated stage.
 
+    /*! <!-- Stage info --> */
     const void PrintStages(void) const; // FIXTORROLL
 
     const State& realizeTopology() const;

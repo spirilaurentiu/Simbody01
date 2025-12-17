@@ -89,11 +89,13 @@ void TimeStepper::setReportAllSignificantStates(bool b) {
     rep->setReportAllSignificantStates(b);
 }
 
-
+/*! <!-- Stage info --> */
 const void TimeStepper::PrintStages(void) const
 {
     const Integrator& integ = getIntegrator();
     integ.PrintStages();
+
+    (rep->getIntegrator()).getState();
 } // FIXTORROLL
 
     ////////////////////////////////////////

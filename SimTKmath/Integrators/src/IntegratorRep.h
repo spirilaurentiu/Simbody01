@@ -949,6 +949,7 @@ protected:
     int getNumQProjectionFailures() const {return statsQProjectionFailures;} 
     int getNumUProjectionFailures() const {return statsUProjectionFailures;} 
 
+    /*! <!-- Stage info --> */
     const void PrintStages() const {
 
         // const State& advState = getAdvancedState();
@@ -962,6 +963,7 @@ protected:
             std::cout <<" "<< advancedState.getSubsystemStage(i) ;
             std::cout <<")";
         }
+        std::cout << std::endl;
 
         if(useInterpolatedState){
             //const State& interState = getInterpolatedState();
@@ -974,8 +976,8 @@ protected:
                 std::cout <<" "<< interpolatedState.getSubsystemVersion(i);
                 std::cout <<" "<< interpolatedState.getSubsystemStage(i) ;
                 std::cout <<")";
-            }
-            
+            }            
+            std::cout << std::endl;
         }
 
     } // FIXTORROLL

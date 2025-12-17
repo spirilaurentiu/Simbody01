@@ -164,6 +164,7 @@ void System::setSystemTopologyCacheVersion(StageVersion topoVersion) const
 void System::invalidateSystemTopologyCache() const
 {   getSystemGuts().invalidateSystemTopologyCache(); }
 
+/*! <!-- Stage info --> */
 const void System::PrintStages(void) const {return getSystemGuts().PrintStages();} // FIXTORROLL
 
 const State& System::realizeTopology() const {return getSystemGuts().realizeTopology();}
@@ -338,6 +339,7 @@ System::Guts* System::Guts::clone() const {
     return cloneImpl();
 }
 
+/*! <!-- Stage info --> */
 const void System::Guts::PrintStages(void) const {
     
     if (!systemTopologyHasBeenRealized()) {
@@ -355,11 +357,12 @@ const void System::Guts::PrintStages(void) const {
         std::cout <<" "<< defaultState.getSubsystemVersion(i);
         std::cout <<" "<< defaultState.getSubsystemStage(i) ;
         std::cout <<")";
-    }    
+    }
+    std::cout << std::endl;
 
-    std::cout << "StageInfo::Subsystems stages:";
-    std::cout <<" (SystemTopologyVersion "<< getRep().getSystemTopologyCacheVersion() <<")";
+    std::cout << "StageInfo::SystemTopologyVersion" << getRep().getSystemTopologyCacheVersion() << std::endl;
 
+    std::cout << "StageInfo::Subsystems stages" << std::endl;
     for (SubsystemIndex i(0); i<getNumSubsystems(); ++i){
         std::cout <<" (" << i;
         std::cout <<" "<< getRep().subsystems[i].getName();

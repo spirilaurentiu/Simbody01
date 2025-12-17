@@ -401,6 +401,7 @@ public:
     /// matrix recomputed at each iteration if you want.
     void setForceFullNewton(bool forceFullNewton);
 
+    /*! <!-- Stage info --> */
     const void PrintStages(void) const; // FIXTORROLL
 
     /// OBSOLETE: use getSuccessfulStepStatusString().

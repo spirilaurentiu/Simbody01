@@ -311,7 +311,7 @@ int Integrator::getMethodMaxOrder() const {
     return getRep().getMethodMaxOrder();
 }
 
-
+/*! <!-- Stage info --> */
 const void Integrator::PrintStages(void) const {
     getRep().PrintStages();
 } // FIXTORROLL
