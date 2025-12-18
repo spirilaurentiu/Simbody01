@@ -950,7 +950,7 @@ protected:
     int getNumUProjectionFailures() const {return statsUProjectionFailures;} 
 
     /*! <!-- Stage info --> */
-    const void PrintStages() const {
+    const void PrintAdvancedStateStages() const {
 
         // const State& advState = getAdvancedState();
         const Stage& advStage = advancedState.getSystemStage();
@@ -965,10 +965,15 @@ protected:
         }
         std::cout << std::endl;
 
+    }
+
+    /*! <!-- Stage info --> */
+    const void PrintInterpolatedStateStages() const {
+
         if(useInterpolatedState){
             //const State& interState = getInterpolatedState();
             const Stage& interStage = interpolatedState.getSystemStage();
-            std::cout << "StageInfo::interState " << advStage << std::endl;
+            std::cout << "StageInfo::interState " << interStage << std::endl;
 
             for (SubsystemIndex i(0); i<interpolatedState.getNumSubsystems(); ++i){
                 std::cout <<" (" << i;
@@ -980,7 +985,7 @@ protected:
             std::cout << std::endl;
         }
 
-    } // FIXTORROLL
+    }
 
 private:
     class EventSorter {

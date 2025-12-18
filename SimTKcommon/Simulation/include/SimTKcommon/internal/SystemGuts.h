@@ -134,7 +134,14 @@ public:
     // the System stage is already at or greater than the indicated stage.
 
     /*! <!-- Stage info --> */
-    const void PrintStages(void) const; // FIXTORROLL
+    const void PrintStages(void) const
+    {
+            PrintDefaultStateStages();
+            PrintSubsystemsStages();
+    }
+
+    const void PrintDefaultStateStages(void) const;
+    const void PrintSubsystemsStages(void) const;
 
     const State& realizeTopology() const;
     void realizeModel(State&) const;

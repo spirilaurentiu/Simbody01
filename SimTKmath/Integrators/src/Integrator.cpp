@@ -312,9 +312,15 @@ int Integrator::getMethodMaxOrder() const {
 }
 
 /*! <!-- Stage info --> */
-const void Integrator::PrintStages(void) const {
-    getRep().PrintStages();
-} // FIXTORROLL
+const void Integrator::PrintAdvancedStateStages(void) const {
+    getRep().PrintAdvancedStateStages();
+}
+
+/*! <!-- Stage info --> */
+const void Integrator::PrintInterpolatedStateStages(void) const {
+    getRep().PrintInterpolatedStateStages();
+}
+
 
     //////////////////////////////////////
     // IMPLEMENTATION OF INTEGRATOR REP //

@@ -98,8 +98,10 @@ class SimTK_SimTKCOMMON_EXPORT System {
 public:
 class Guts; // local; name is System::Guts
 
-
-const void PrintStages(void) const; // FIXTORROLL
+/*! <!-- Stage info --> */
+const void PrintStages(void) const;
+const void PrintDefaultStateStages(void) const;
+const void PrintSubsystemsStages(void) const;
 
 //------------------------------------------------------------------------------
 /**@name                    System-wide properties

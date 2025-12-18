@@ -117,7 +117,13 @@ public:
     Integrator::SuccessfulStepStatus stepTo(Real time);
 
     /*! <!-- Stage info --> */
-    const void PrintStages(void) const; // FIXTORROLL
+    const void PrintStages(void) const {
+        PrintAdvancedStateStages();
+        PrintInterpolatedStateStages();
+    };
+    
+    const void PrintAdvancedStateStages(void) const;
+    const void PrintInterpolatedStateStages(void) const;
 
 private:
     class TimeStepperRep* rep;

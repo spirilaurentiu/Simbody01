@@ -402,7 +402,13 @@ public:
     void setForceFullNewton(bool forceFullNewton);
 
     /*! <!-- Stage info --> */
-    const void PrintStages(void) const; // FIXTORROLL
+    const void PrintStages(void) const {
+        PrintAdvancedStateStages();
+        PrintInterpolatedStateStages();
+    };
+    
+    const void PrintAdvancedStateStages(void) const; // FIXTORROLL
+    const void PrintInterpolatedStateStages(void) const; // FIXTORROLL
 
     /// OBSOLETE: use getSuccessfulStepStatusString().
     static String successfulStepStatusString(SuccessfulStepStatus stat)

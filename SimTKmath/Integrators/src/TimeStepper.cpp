@@ -90,13 +90,21 @@ void TimeStepper::setReportAllSignificantStates(bool b) {
 }
 
 /*! <!-- Stage info --> */
-const void TimeStepper::PrintStages(void) const
+const void TimeStepper::PrintAdvancedStateStages(void) const
 {
     const Integrator& integ = getIntegrator();
-    integ.PrintStages();
+    integ.PrintAdvancedStateStages();
 
-    (rep->getIntegrator()).getState();
-} // FIXTORROLL
+}
+
+/*! <!-- Stage info --> */
+const void TimeStepper::PrintInterpolatedStateStages(void) const
+{
+    const Integrator& integ = getIntegrator();
+    integ.PrintInterpolatedStateStages();
+
+}
+
 
     ////////////////////////////////////////
     // IMPLEMENTATION OF TIME STEPPER REP //

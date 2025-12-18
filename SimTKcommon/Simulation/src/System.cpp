@@ -166,6 +166,8 @@ void System::invalidateSystemTopologyCache() const
 
 /*! <!-- Stage info --> */
 const void System::PrintStages(void) const {return getSystemGuts().PrintStages();} // FIXTORROLL
+const void System::PrintDefaultStateStages(void) const {return getSystemGuts().PrintDefaultStateStages();} // FIXTORROLL
+const void System::PrintSubsystemsStages(void) const {return getSystemGuts().PrintSubsystemsStages();} // FIXTORROLL
 
 const State& System::realizeTopology() const {return getSystemGuts().realizeTopology();}
 void System::realizeModel(State& s) const {getSystemGuts().realizeModel(s);}
@@ -340,7 +342,7 @@ System::Guts* System::Guts::clone() const {
 }
 
 /*! <!-- Stage info --> */
-const void System::Guts::PrintStages(void) const {
+const void System::Guts::PrintDefaultStateStages(void) const {
     
     if (!systemTopologyHasBeenRealized()) {
         std::cout << " System topology has NOT been realized yet." << std::endl << std::flush;
@@ -360,6 +362,18 @@ const void System::Guts::PrintStages(void) const {
     }
     std::cout << std::endl;
 
+}
+
+
+
+/*! <!-- Stage info --> */
+const void System::Guts::PrintSubsystemsStages(void) const {
+    
+    if (!systemTopologyHasBeenRealized()) {
+        std::cout << " System topology has NOT been realized yet." << std::endl << std::flush;
+        return;
+    }
+
     std::cout << "StageInfo::SystemTopologyVersion" << getRep().getSystemTopologyCacheVersion() << std::endl;
 
     std::cout << "StageInfo::Subsystems stages" << std::endl;
@@ -367,7 +381,7 @@ const void System::Guts::PrintStages(void) const {
         std::cout <<" (" << i;
         std::cout <<" "<< getRep().subsystems[i].getName();
         std::cout <<" "<< getRep().subsystems[i].getVersion() <<" "<< getRep().getSystemTopologyCacheVersion();
-        std::cout <<" "<< getRep().subsystems[i].getStage(defaultState);
+        std::cout <<" "<< getRep().subsystems[i].getStage(getRep().defaultState);
         std::cout <<")";
     }
     std::cout << std::endl;
@@ -384,7 +398,8 @@ const void System::Guts::PrintStages(void) const {
     std::cout <<" "<< getRep().nRealizationsOfStage[Stage::Report];
     std::cout << std::endl;
 
-} // FIXTORROLL
+}
+
 
 
 //------------------------------------------------------------------------------
