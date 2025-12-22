@@ -361,6 +361,12 @@ void realizeYOutward(
     const SBArticulatedBodyInertiaCache&    abc,
     SBDynamicsCache&                        dc) const override;
 
+void realizeYOutwardForPrescribed(
+const SBInstanceCache&                  ic,
+const SBTreePositionCache&              pc,
+const SBArticulatedBodyInertiaCache&    abc,
+SBDynamicsCache&                        dc) const override;
+
 void multiplyBySystemJacobian(
     const SBTreePositionCache&  pc,
     const Real*                 v,

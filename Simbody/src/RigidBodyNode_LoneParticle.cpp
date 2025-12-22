@@ -208,6 +208,13 @@ void realizeYOutward(
             SBDynamicsCache&                      dc) const override {
 }
 
+void realizeYOutwardForPrescribed(
+            const SBInstanceCache&                ic,
+            const SBTreePositionCache&            pc,
+            const SBArticulatedBodyInertiaCache&  abc,
+            SBDynamicsCache&                      dc) const override {
+}
+
 void calcCompositeBodyInertiasInward
    (const SBTreePositionCache& pc, 
     Array_<SpatialInertia,MobilizedBodyIndex>& R) const override {

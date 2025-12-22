@@ -749,12 +749,21 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcFixmanTorquePass2Outward(
     Real*                                   allUDot,
     Real*                                   detM) const
 {
-    //STUDYN("  RigidBodyNodeSpec::calcFixmanTorquePass2Outward base-to-tip");
+
+    const bool isPrescribed = isUDotKnown(ic);
+    if (isPrescribed) {
+
+        // std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward prescribed mobilizer"<<std::endl; //FIXTORROLL
+
+        Vec<dof>&       udot = toU(allUDot); // pull out this node's udot
+        udot = 0;
+        return;
+    }
+
     const Vec<dof>& eps  = fromU(allEpsilon);
     SpatialVec&     A_GB = allA_GB[nodeNum];
     Vec<dof>&       udot = toU(allUDot); // pull out this node's udot
 
-    const bool isPrescribed = isUDotKnown(ic);
     const HType&        H   = getH(pc);
     const PhiMatrix&    phi = getPhi(pc);
     const Mat<dof,dof>& DI  = getDI(abc);
@@ -788,9 +797,7 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcFixmanTorquePass2Outward(
         //SimTK::SpatialMat HBold(0);
         //HBold[0][0] = HBold00;
         //HBold[1][1] = HBold00;
-
         //SimTK::SpatialMat PYHBold = PY * HBold;
-
         //SimTK::Real trPYHBold = 0.0;
         //for(unsigned int i = 0; i < 2; i++){
         //    for(unsigned int k = 0; k < 3; k++){
@@ -801,6 +808,34 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcFixmanTorquePass2Outward(
         // Store result
         udot[j] = SimTK::dot((-1)*h_G, FofA) ;
     } // for dof
+
+
+    // std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward \n"
+    //     << "Y " << Y  << std::endl
+    //     <<"P "<< P.toSpatialMat() << std::endl
+    //     <<"PY "<< PY << std::endl
+    //     <<"A "<< A << std::endl
+    //     ;
+    // for(int j=0; j<dof; j++){
+    //     SpatialVec HCol_forPrint;
+    //     Vec3 h_G_forPrint;
+    //     HCol_forPrint = SpatialVec(H(0,j), H(1,j));
+    //     h_G_forPrint[0] = HCol_forPrint[0][0];
+    //     h_G_forPrint[1] = HCol_forPrint[0][1];
+    //     h_G_forPrint[2] = HCol_forPrint[0][2];
+    //     if(h_G_forPrint.norm() > SimTK::TinyReal){
+    //         h_G_forPrint = h_G_forPrint.normalize();
+    //     }
+    //     SimTK::Mat33 B = A - A.transpose();
+    //     SimTK::Vec3 FofA = SimTK::Vec3(B(2,1), B(0,2), B(1,0));
+    //     std::cout <<"j "<< j << std::endl;
+    //     std::cout <<"HCol "<< HCol << std::endl;
+    //     std::cout <<"h_G "<< h_G << std::endl;
+    //     std::cout <<"FofA "<< FofA << std::endl;
+    //     std::cout <<"udot "<< udot[j];
+    // }
+    // std::cout << std::endl;
+
 
 }
 
@@ -972,7 +1007,7 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::realizeYOutward
     SBDynamicsCache&                        dc) const
 {
     if (isUDotKnown(ic)) {
-        std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << " assert(false) isUDotKnown(SBInstanceCache) " << isUDotKnown(ic) << std::endl << std::flush;
+        //std::cout << "FIXTORROLLRigidBodyNodeSpec::realizeYOutward(): " << " assert(false) isUDotKnown(SBInstanceCache) " << isUDotKnown(ic) << std::endl << std::flush;
         //TODO: (sherm 090810) is this right?
         assert(false);
         //updY(dc) = (~getPhi(pc) * parent->getY(dc)) * getPhi(pc); // rigid shift
@@ -998,6 +1033,40 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::realizeYOutward
 
     // Psi here has the opposite sign from Jain's, but we're multiplying twice
     // by it here so it doesn't matter.
+    updY(dc) = (getH(pc) * getDI(abc) * ~getH(pc)) 
+                + (~psi * parent->getY(dc) * psi);
+}
+
+
+//==============================================================================
+//                      REALIZE Y FOR PRESCRIBED
+//==============================================================================
+// To be called base to tip.
+// This is calculating what Abhi Jain calls the operational space compliance
+// kernel in his 2011 book. This is the inverse of the operational space inertia
+// for each body at its body frame. Also, see Equation 20 in Rodriguez,Jain, 
+// & Kreutz-Delgado:  A spatial operator algebra 
+// for manipulator modeling and control. Intl. J. Robotics Research 
+// 10(4):371-381 (1991).
+template<int dof, bool noR_FM, bool noX_MB, bool noR_PF> void
+RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::realizeYOutwardForPrescribed
+   (const SBInstanceCache&                  ic,
+    const SBTreePositionCache&              pc,
+    const SBArticulatedBodyInertiaCache&    abc,
+    SBDynamicsCache&                        dc) const
+{
+    if (isUDotKnown(ic)) {
+    const SpatialMat psi = getPhi(pc).toSpatialMat();
+    updY(dc) = ~psi * parent->getY(dc) * psi;
+        return;
+    }
+
+    SpatialMat tauBar = getG(abc)*~getH(pc);// 11*dof^2 flops
+    tauBar(0,0) -= 1; // subtract identity matrix (only touches diags: 3 flops)
+    tauBar(1,1) -= 1; //    "    (3 flops)
+    SpatialMat psi = getPhi(pc)*tauBar; // ~100 flops (eq. 4.2 1991 Rodriguez)
+
+
     updY(dc) = (getH(pc) * getDI(abc) * ~getH(pc)) 
                 + (~psi * parent->getY(dc) * psi);
 }

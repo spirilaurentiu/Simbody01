@@ -1014,6 +1014,7 @@ public:
 
     // Part of OLD constrained dynamics; TODO: may be useful in op space inertia calcs.
     void realizeY(const State&) const;
+    void realizeYForPrescribed(const State&) const;
 
     const RigidBodyNode& getRigidBodyNode(MobilizedBodyIndex nodeNum) const {
         const RigidBodyNodeIndex& ix = nodeNum2NodeMap[nodeNum];

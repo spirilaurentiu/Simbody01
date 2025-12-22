@@ -5227,6 +5227,25 @@ void SimbodyMatterSubsystemRep::realizeY(const State& s) const {
 //.................................. REALIZE Y .................................
 
 
+// =============================================================================
+//                     REALIZE Y FOR PRESCRIBED MOTION
+// =============================================================================
+// Y is used for length constraints: sweep from base to tip. You can call this
+// after Position stage but it may have to realize articulated bodies first.
+void SimbodyMatterSubsystemRep::realizeYForPrescribed(const State& s) const {
+    realizeArticulatedBodyInertias(s);
+
+    const SBInstanceCache&                ic  = getInstanceCache(s);
+    const SBTreePositionCache&            tpc = getTreePositionCache(s);
+    const SBArticulatedBodyInertiaCache&  abc = getArticulatedBodyInertiaCache(s);
+    SBDynamicsCache&                      dc  = updDynamicsCache(s);
+
+    for (int i=0; i < (int)rbNodeLevels.size(); i++)
+        for (int j=0; j < (int)rbNodeLevels[i].size(); j++)
+            rbNodeLevels[i][j]->realizeYOutwardForPrescribed(ic,tpc,abc,dc);
+}
+//.................................. REALIZE Y .................................
+
 
 //==============================================================================
 //                           CALC KINETIC ENERGY
@@ -5527,8 +5546,7 @@ void SimbodyMatterSubsystemRep::calcFixmanTorque(const State& s,
     Vector&                                            MInvf,
     Real*                                              detM) const 
 {
-    //STUDYN("SimbodyMatterSubsystemRep::calcFixmanTorque base-to-tip");
-    realizeY(s); // Need this
+    realizeYForPrescribed(s); // Need this
 
     const SBInstanceCache&                  ic  = getInstanceCache(s);
     const SBTreePositionCache&              tpc = getTreePositionCache(s);
@@ -5563,6 +5581,9 @@ void SimbodyMatterSubsystemRep::calcFixmanTorque(const State& s,
     for (int i=0 ; i<(int)rbNodeLevels.size() ; i++){
         for (int j=0 ; j<(int)rbNodeLevels[i].size() ; j++) {
             const RigidBodyNode& node = *rbNodeLevels[i][j];
+
+            // std::cout << "SimbodyMatterSubsystemRep::calcFixmanTorque node[" << i << "][" << j << "]" << std::endl;
+
             node.calcFixmanTorquePass2Outward(ic,tpc,abc,dc, 
                 eps.cbegin(), A_GB.begin(), MInvfPtr, detM);
         }

@@ -190,6 +190,13 @@ public:
     {
     }
 
+    void realizeYOutwardForPrescribed(
+        const SBInstanceCache&,
+        const SBTreePositionCache&,
+        const SBArticulatedBodyInertiaCache&,
+        SBDynamicsCache&                        dc) const override
+    {
+    }
 
     // Treat Ground as though welded to the universe at the ground
     // origin. The reaction there collects the effects of all the
@@ -550,6 +557,20 @@ public:
         updY(dc) = ~psi * parent->getY(dc) * psi;
     }
 
+        void realizeYOutwardForPrescribed(
+        const SBInstanceCache&,
+        const SBTreePositionCache&              pc,
+        const SBArticulatedBodyInertiaCache&    abc,
+        SBDynamicsCache&                        dc) const override
+    {
+        // This psi actually has the wrong sign, but it doesn't matter since we 
+        // multiply by it twice.
+
+        SpatialMat psi = getPhi(pc).toSpatialMat();
+        updY(dc) = ~psi * parent->getY(dc) * psi;
+    }
+
+    
     
     void calcUDotPass1Inward(
         const SBInstanceCache&,

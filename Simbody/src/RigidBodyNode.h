@@ -489,6 +489,12 @@ virtual void realizeYOutward(
     const SBArticulatedBodyInertiaCache&  abc,
     SBDynamicsCache&                      dc) const=0;
 
+virtual void realizeYOutwardForPrescribed(
+const SBInstanceCache&                ic,
+const SBTreePositionCache&            pc,
+const SBArticulatedBodyInertiaCache&  abc,
+SBDynamicsCache&                      dc) const=0;
+
 // This has a default implementation that is good for everything
 // but Ground.
 virtual void calcCompositeBodyInertiasInward(
