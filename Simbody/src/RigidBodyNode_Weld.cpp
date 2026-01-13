@@ -779,6 +779,8 @@ public:
         SpatialVec&      A_GB = allA_GB[nodeNum];
         const PhiMatrix& phi  = getPhi(pc);
 
+        std::cout << "RigidBodyNode_Weld::calcFixmanTorquePass2Outward \n";
+
         // Shift parent's acceleration outward (Ground==0). 12 flops
         //const SpatialVec& A_GP  = allA_GB[parent->getNodeNum()]; 
         //const SpatialVec  APlus = ~phi * A_GP;

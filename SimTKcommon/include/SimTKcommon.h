@@ -60,5 +60,4 @@
 #include "SimTKcommon/Testing.h"
 #endif
 
-
 #endif /* SimTK_SimTKCOMMON_H_ */

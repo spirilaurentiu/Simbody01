@@ -798,6 +798,7 @@ operator==(const PhiMatrixTranspose& p1, const PhiMatrixTranspose& p2)
 {
     return p1.l() == p2.l();
 }
+
 } // namespace SimTK
 
 #endif // SimTK_SIMMATRIX_SPATIAL_ALGEBRA_H_

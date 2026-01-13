@@ -36,6 +36,44 @@ instantiations of the class for all possible values of the arguments. */
 #include "RigidBodyNodeSpec_Custom.h"
 
 //==============================================================================
+//                              DEBUGGING
+//==============================================================================
+#include <iostream>
+#include <iomanip>
+#include <string>
+
+/*! <-- Print Spatial Matrix */
+void bPrintSpatialMat(const SimTK::SpatialMat& M, int decimal_places, const std::string& header)
+{
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            for (int k = 0; k < 3; k++) {
+                printf("%s: ", header.c_str());
+                for (int l = 0; l < 3; l++) {
+                    printf("%.*f ", decimal_places, M[i][j][k][l]);
+                }
+                printf("\n");
+            }
+        }
+    }
+}
+
+/*! <-- Print Spatial Vector */
+void bPrintSpatialVec(const SimTK::SpatialVec& M, int decimal_places, const std::string& header)
+{
+    printf("%s: ", header.c_str());
+    for (int i = 0; i < 2; i++) {
+        for (int k = 0; k < 3; k++) {
+            printf("%.*f ", decimal_places, M[i][k]);
+        }
+    }
+    printf("\n");
+}
+
+//-------------- END OF DEBUGGING  --------------------------------------------
+
+//==============================================================================
 //                              CALC H_PB_G
 //==============================================================================
 // Same for all mobilizers.
@@ -752,9 +790,7 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcFixmanTorquePass2Outward(
 
     const bool isPrescribed = isUDotKnown(ic);
     if (isPrescribed) {
-
-        // std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward prescribed mobilizer"<<std::endl; //FIXTORROLL
-
+        std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward prescribed mobilizer"<<std::endl; //FIXTORROLL
         Vec<dof>&       udot = toU(allUDot); // pull out this node's udot
         udot = 0;
         return;
@@ -810,31 +846,33 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcFixmanTorquePass2Outward(
     } // for dof
 
 
-    // std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward \n"
-    //     << "Y " << Y  << std::endl
-    //     <<"P "<< P.toSpatialMat() << std::endl
-    //     <<"PY "<< PY << std::endl
-    //     <<"A "<< A << std::endl
-    //     ;
-    // for(int j=0; j<dof; j++){
-    //     SpatialVec HCol_forPrint;
-    //     Vec3 h_G_forPrint;
-    //     HCol_forPrint = SpatialVec(H(0,j), H(1,j));
-    //     h_G_forPrint[0] = HCol_forPrint[0][0];
-    //     h_G_forPrint[1] = HCol_forPrint[0][1];
-    //     h_G_forPrint[2] = HCol_forPrint[0][2];
-    //     if(h_G_forPrint.norm() > SimTK::TinyReal){
-    //         h_G_forPrint = h_G_forPrint.normalize();
-    //     }
-    //     SimTK::Mat33 B = A - A.transpose();
-    //     SimTK::Vec3 FofA = SimTK::Vec3(B(2,1), B(0,2), B(1,0));
-    //     std::cout <<"j "<< j << std::endl;
-    //     std::cout <<"HCol "<< HCol << std::endl;
-    //     std::cout <<"h_G "<< h_G << std::endl;
-    //     std::cout <<"FofA "<< FofA << std::endl;
-    //     std::cout <<"udot "<< udot[j];
-    // }
-    // std::cout << std::endl;
+    bPrintSpatialMat(P.toSpatialMat(), 3, "RigidBodyNodeSpec::calcFixmanTorquePass2Outward P");
+    //std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward \n"
+        // << "Y " << Y  << std::endl
+        // <<"P "<< P.toSpatialMat() << std::endl
+        // <<"PY "<< PY << std::endl
+        // <<"A "<< A << std::endl
+        //;
+
+    for(int j=0; j<dof; j++){
+        SpatialVec HCol_forPrint;
+        Vec3 h_G_forPrint;
+        HCol_forPrint = SpatialVec(H(0,j), H(1,j));
+        h_G_forPrint[0] = HCol_forPrint[0][0];
+        h_G_forPrint[1] = HCol_forPrint[0][1];
+        h_G_forPrint[2] = HCol_forPrint[0][2];
+        if(h_G_forPrint.norm() > SimTK::TinyReal){
+            h_G_forPrint = h_G_forPrint.normalize();
+        }
+        SimTK::Mat33 B = A - A.transpose();
+        SimTK::Vec3 FofA = SimTK::Vec3(B(2,1), B(0,2), B(1,0));
+        std::cout <<"RigidBodyNodeSpec::calcFixmanTorquePass2Outward dofj "<< j << std::endl;
+        //std::cout <<"RigidBodyNodeSpec::calcFixmanTorquePass2Outward HCol "<< HCol_forPrint << std::endl;
+        std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward h_G "<< h_G_forPrint[0] << " " << h_G_forPrint[1] << " " << h_G_forPrint[2] << std::endl;
+        std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward FofA "<< FofA[0] << " " << FofA[1] << " " << FofA[2] << std::endl;
+        std::cout << "RigidBodyNodeSpec::calcFixmanTorquePass2Outward udot "<< udot[j];
+    }
+    std::cout << std::endl; // FIXTORROLL
 
 
 }

@@ -37,7 +37,6 @@ class RigidBodyNode;
 #include <iostream>
 using std::cout;
 using std::endl;
-
 namespace SimTK {
 
     /////////////////
