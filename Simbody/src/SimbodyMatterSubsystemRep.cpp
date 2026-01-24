@@ -5582,7 +5582,7 @@ void SimbodyMatterSubsystemRep::calcFixmanTorque(const State& s,
         for (int j=0 ; j<(int)rbNodeLevels[i].size() ; j++) {
             const RigidBodyNode& node = *rbNodeLevels[i][j];
 
-            std::cout << "SimbodyMatterSubsystemRep::calcFixmanTorque node[" << i << "][" << j << "]" << std::endl; // FIXTORROLL
+            //std::cout << "SimbodyMatterSubsystemRep::calcFixmanTorque node[" << i << "][" << j << "]" << std::endl; // FIXTORROLL
 
             node.calcFixmanTorquePass2Outward(ic,tpc,abc,dc, 
                 eps.cbegin(), A_GB.begin(), MInvfPtr, detM);
