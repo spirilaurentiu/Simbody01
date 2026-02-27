@@ -65,6 +65,10 @@ DecorativeGeometry& MobilizedBody::updInboardDecoration(int i)
 {   return updImpl().inboardGeometry[i]; }
 
 
+void MobilizedBody::lockDofs(State& state, bool first, bool second, bool third) const {
+    getImpl().lockDofs(state, first, second, third);
+}
+
 void MobilizedBody::
 lock(State& s, Motion::Level level) const
 {   getImpl().lock(s,level); }
@@ -611,6 +615,44 @@ void MobilizedBodyImpl::findMobilizerUs
    (const State& s, UIndex& uStart, int& nu) const {
     getMyMatterSubsystemRep()
         .findMobilizerUs(s, myMobilizedBodyIndex, uStart, nu);
+}
+
+void MobilizedBodyImpl::lockDofs(State& state, bool first, bool second, bool third) const {
+    // PICK ME UP FROM HERE
+    SBInstanceVars& iv = getMyMatterSubsystemRep().updInstanceVars(state);
+    iv.mobilizerLockLevel[getMyMobilizedBodyIndex()] = Motion::Level::Position;
+    UIndex uStart; int nu; findMobilizerUs(state, uStart, nu);
+    const UIndex uEnd(uStart+nu);
+
+    Vector& u = state.updU();
+
+    const Vector& q = state.getQ();
+    assert(iv.lockedQs.size() == q.size());
+    QIndex qStart; int nq; findMobilizerQs(state, qStart, nq);
+
+    if (first) {
+        UIndex ux(uStart + 0);
+        u[ux] = 0;
+
+        QIndex qx(qStart + 0);
+        iv.lockedQs[qx] = q[qx];
+    }
+
+    if (second) {
+        UIndex ux(uStart + 1);
+        u[ux] = 0;
+
+        QIndex qx(qStart + 1);
+        iv.lockedQs[qx] = q[qx];
+    }
+
+    if (third) {
+        UIndex ux(uStart + 2);
+        u[ux] = 0;
+
+        QIndex qx(qStart + 2);
+        iv.lockedQs[qx] = q[qx];
+    }
 }
 
 // Set the lock level and record the current q or u if needed so we can

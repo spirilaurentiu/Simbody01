@@ -219,6 +219,8 @@ least Stage::Model and will be lowered to Stage::Model on return since a lock is
 an Instance-stage change. **/ 
 void lock(State& state, Motion::Level level=Motion::Position) const;
 
+void lockDofs(State& state, bool first, bool second, bool third) const;
+
 /** Lock this mobilizer's q, u, or udot to the given scalar \p value, depending 
 on \p level. When locking at the position level (the default), this mobilizer's 
 q in \p state is set to \p value, and u in \p state is set to zero. When locking
