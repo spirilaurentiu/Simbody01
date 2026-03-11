@@ -620,17 +620,27 @@ void MobilizedBodyImpl::findMobilizerUs
 void MobilizedBodyImpl::lockDofs(State& state, bool first, bool second, bool third) const {
     // PICK ME UP FROM HERE
     SBInstanceVars& iv = getMyMatterSubsystemRep().updInstanceVars(state);
-    iv.mobilizerLockLevel[getMyMobilizedBodyIndex()] = Motion::Level::Position;
-    UIndex uStart; int nu; findMobilizerUs(state, uStart, nu);
-    const UIndex uEnd(uStart+nu);
-
+    
+    UIndex uStart;
+    int nu;
+    findMobilizerUs(state, uStart, nu);
     Vector& u = state.updU();
 
     const Vector& q = state.getQ();
     assert(iv.lockedQs.size() == q.size());
-    QIndex qStart; int nq; findMobilizerQs(state, qStart, nq);
+    
+    QIndex qStart;
+    int nq;
+    findMobilizerQs(state, qStart, nq);
+
+    std::cout << "mbx " << getMyBaseBodyMobilizedBodyIndex() << " uStart=" << uStart << " uEnd=" << (uStart+nu) << " qStart=" << qStart << " qEnd=" << (qStart+nq) << std::endl;
+    std::cout << "\t" << "before: u first: " << u[uStart] << " q first: " << q[qStart] << std::endl;
+    std::cout << "\t" << "before: u second: " << u[uStart+1] << " q second: " << q[qStart+1] << std::endl;
+    std::cout << "\t" << "before: u third: " << u[uStart+2] << " q third: " << q[qStart+2] << std::endl;
 
     if (first) {
+        iv.mobilizerLockLevel[getMyMobilizedBodyIndex()] = Motion::Level::Position;
+
         UIndex ux(uStart + 0);
         u[ux] = 0;
 
@@ -639,6 +649,8 @@ void MobilizedBodyImpl::lockDofs(State& state, bool first, bool second, bool thi
     }
 
     if (second) {
+        iv.mobilizerLockLevel[getMyMobilizedBodyIndex()] = Motion::Level::Position;
+
         UIndex ux(uStart + 1);
         u[ux] = 0;
 
@@ -647,12 +659,18 @@ void MobilizedBodyImpl::lockDofs(State& state, bool first, bool second, bool thi
     }
 
     if (third) {
+        iv.mobilizerLockLevel[getMyMobilizedBodyIndex()] = Motion::Level::Position;
+
         UIndex ux(uStart + 2);
         u[ux] = 0;
 
         QIndex qx(qStart + 2);
         iv.lockedQs[qx] = q[qx];
     }
+
+    std::cout << "\t" << "after: u first: " << u[uStart] << " q first: " << q[qStart] << std::endl;
+    std::cout << "\t" << "after: u second: " << u[uStart+1] << " q second: " << q[qStart+1] << std::endl;
+    std::cout << "\t" << "after: u third: " << u[uStart+2] << " q third: " << q[qStart+2] << std::endl;
 }
 
 // Set the lock level and record the current q or u if needed so we can
