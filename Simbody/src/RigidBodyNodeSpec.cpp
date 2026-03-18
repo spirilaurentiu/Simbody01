@@ -714,54 +714,34 @@ RigidBodyNodeSpec<dof, noR_FM, noX_MB, noR_PF>::calcDetMPass2Outward(
     const SBInstanceCache&                  ic,
     const SBTreePositionCache&              pc,
     const SBArticulatedBodyInertiaCache&    abc,
+    //const SBDynamicsCache&                  dc,
     const Real*                             allEpsilon,
     SpatialVec*                             allA_GB,
     Real*                                   allUDot,
     Real*                                   detM) const
 {
+    //STUDYN("  RigidBodyNodeSpec::calcDetMPass2Outward base-to-tip");
     const Vec<dof>& eps  = fromU(allEpsilon);
     SpatialVec&     A_GB = allA_GB[nodeNum];
-    Vec<dof>&       udot = toU(allUDot);
+    Vec<dof>&       udot = toU(allUDot); // pull out this node's udot
 
     const bool isPrescribed = isUDotKnown(ic);
-
+    const HType&        H   = getH(pc);
     const PhiMatrix&    phi = getPhi(pc);
+    const Mat<dof,dof>& DI  = getDI(abc);
 
-    // Shift parent acceleration outward
-    const SpatialVec& A_GP  = allA_GB[parent->getNodeNum()];
+    const Mat<dof,dof>& D  = getD(abc);
+    //std::cout << "RigidBodyNodeSpec::calcDetMPass2Outward D: "<< D;
+    //(*detM) *= SimTK::det(D);
+    (*detM) += std::log(SimTK::det(D));
+    //std::cout << " " << std::log(SimTK::det(D)) << std::endl;
+
+    const HType&        G   = getG(abc);
+
+    // Shift parent's acceleration outward (Ground==0). 12 flops
+    const SpatialVec& A_GP  = allA_GB[parent->getNodeNum()]; 
     const SpatialVec  APlus = ~phi * A_GP;
 
-    if (!isPrescribed) {
-
-        // ---- FREE MOBILIZER BRANCH ----
-
-        const HType&        H   = getH(pc);
-        const Mat<dof,dof>& D   = getD(abc);
-        const Mat<dof,dof>& DI  = getDI(abc);
-        const HType&        G   = getG(abc);
-
-        // Accumulate log(det(M)) via product of D blocks
-        (*detM) += std::log(SimTK::det(D));
-
-        // Solve for udot
-        udot = DI * (eps - ~H * APlus);
-
-        // Compute body acceleration
-        A_GB = APlus + H * udot;
-    }
-    else {
-
-        // ---- PRESCRIBED MOBILIZER BRANCH ----
-        // No D contribution.
-        // No DI inversion.
-        // No G usage.
-        // No determinant factor.
-
-        // udot already known externally (prescribed acceleration)
-        // so just propagate acceleration kinematically.
-
-        A_GB = APlus + getH(pc) * udot;
-    }
 }
 
 
