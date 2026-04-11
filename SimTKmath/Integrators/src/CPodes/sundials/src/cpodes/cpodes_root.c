@@ -435,7 +435,7 @@ int cpRcheck3(CPodeMem cp_mem)
  *            the vector-valued function g(t).  Input only.
  *
  * gfun     = user-defined function for g(t).  Its form is
- *            (void) gfun(t, y, gt, g_data)
+ *            () gfun(t, y, gt, g_data)
  *
  * gactive  = array specifying whether a component of g should
  *            or should not be monitored. gactive[i] is initially

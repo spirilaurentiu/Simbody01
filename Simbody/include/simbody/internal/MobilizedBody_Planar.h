@@ -36,59 +36,85 @@ coordinates are rotation about the shared z axis of the F and M
 frame, translation along the F frame's x axis, and translation along
 its y axis, in that order. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Planar : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Planar. **/
-    Planar() {}
+    Planar() {
+    }
 
-    /** Create a %Planar mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Planar mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Planar(MobilizedBody& parent, const Transform& X_PF,
-           const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    Planar(MobilizedBody& parent,
+           const Transform& X_PF,
+           const Body& bodyInfo,
+           const Transform& X_BM,
+           Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Planar(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Planar(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     Planar& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Planar& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Planar& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Planar& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Planar& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Planar& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Planar& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     // Friendly, mobilizer-specific access to coordinates and speeds.
     Planar& setDefaultAngle(Real a) {
-        Vec3 q = getDefaultQ(); q[0] = a; setDefaultQ(q);
+        Vec3 q = getDefaultQ();
+        q[0] = a;
+        setDefaultQ(q);
         return *this;
     }
     Planar& setDefaultTranslation(const Vec2& r) {
-        Vec3 q = getDefaultQ(); q.updSubVec<2>(1) = r; setDefaultQ(q);
+        Vec3 q = getDefaultQ();
+        q.updSubVec<2>(1) = r;
+        setDefaultQ(q);
         return *this;
     }
 
-    Real getDefaultAngle() const {return getDefaultQ()[0];}
-    const Vec2& getDefaultTranslation() const {return getDefaultQ().getSubVec<2>(1);}
+    Real getDefaultAngle() const {
+        return getDefaultQ()[0];
+    }
+    const Vec2& getDefaultTranslation() const {
+        return getDefaultQ().getSubVec<2>(1);
+    }
 
-    void setAngle      (State& s, Real        a) {setOneQ(s,0,a);}
-    void setTranslation(State& s, const Vec2& r) {setOneQ(s,1,r[0]); setOneQ(s,2,r[1]);}
+    void setAngle(State& s, Real a) {
+        setOneQ(s, 0, a);
+    }
+    void setTranslation(State& s, const Vec2& r) {
+        setOneQ(s, 1, r[0]);
+        setOneQ(s, 2, r[1]);
+    }
 
-    Real getAngle(const State& s) const {return getQ(s)[0];}
-    const Vec2& getTranslation(const State& s) const {return getQ(s).getSubVec<2>(1);}
+    Real getAngle(const State& s) const {
+        return getQ(s)[0];
+    }
+    const Vec2& getTranslation(const State& s) const {
+        return getQ(s).getSubVec<2>(1);
+    }
 
     // Generic default state Topology methods.
     const Vec3& getDefaultQ() const;
@@ -105,7 +131,7 @@ public:
 
     const Vec3& getMyPartQ(const State&, const Vector& qlike) const;
     const Vec3& getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Vec3& updMyPartQ(const State&, Vector& qlike) const;
     Vec3& updMyPartU(const State&, Vector& ulike) const;
 
@@ -117,6 +143,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_PLANAR_H_
-
-
-

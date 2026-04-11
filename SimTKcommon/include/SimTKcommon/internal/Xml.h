@@ -646,9 +646,14 @@ inline std::ostream& operator<<(std::ostream& o, const  Attribute& attr) {
 //------------------------------------------------------------------------------
 /** This is a bidirectional iterator suitable for moving forward or backward
 within a list of Attributes within an Element, for writable access. **/
-class SimTK_SimTKCOMMON_EXPORT attribute_iterator 
-:   public std::iterator<std::bidirectional_iterator_tag, Attribute> {
+class SimTK_SimTKCOMMON_EXPORT attribute_iterator {
 public:
+using iterator_category = std::bidirectional_iterator_tag;
+using value_type        = Attribute;
+using difference_type   = std::ptrdiff_t;
+using pointer           = Attribute*;
+using reference         = Attribute&;
+
 /** Default constructor creates an iterator that compares equal to 
 attribute_end(). **/
 attribute_iterator() {}
@@ -901,9 +906,13 @@ inline std::ostream& operator<<(std::ostream& o, const Node& xmlNode) {
 /** This is a bidirectional iterator suitable for moving forward or backward
 within a list of Nodes, for writable access. By default we will iterate
 over all nodes but you can restrict the types at construction. **/
-class SimTK_SimTKCOMMON_EXPORT node_iterator 
-:   public std::iterator<std::bidirectional_iterator_tag, Node> {
+class SimTK_SimTKCOMMON_EXPORT node_iterator {
 public:
+using iterator_category = std::bidirectional_iterator_tag;
+using value_type        = Node;
+using difference_type   = std::ptrdiff_t;
+using pointer           = Node*;
+using reference         = Node&;
 
 explicit node_iterator(NodeType allowed=AnyNodes) 
 :   allowed(allowed) {}

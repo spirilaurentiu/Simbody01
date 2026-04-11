@@ -402,7 +402,7 @@ void calcDetMPass1Inward(
         SpatialVec*                             allZ,
         SpatialVec*                             allZPlus,
         Real*                                   allEpsilon,
-        Real*                                   detM) const 
+        Real*                                   detM) const override
 {
     if (isUDotKnown(ic)) // prescribed
         return;
@@ -424,7 +424,7 @@ void calcDetMPass2Outward(
         const Real*                             allEpsilon,
         SpatialVec*                             allA_GB,
         Real*                                   allUDot, 
-        Real*                                   detM) const 
+        Real*                                   detM) const override 
 {
     const bool isPrescribed = isUDotKnown(ic);
     const Vec3& eps = Vec3::getAs(&allEpsilon[uIndex]);
@@ -452,7 +452,7 @@ void calcFixmanTorquePass1Inward(
         SpatialVec*                             allZ,
         SpatialVec*                             allZPlus,
         Real*                                   allEpsilon,
-        Real*                                   detM) const 
+        Real*                                   detM) const override 
 {
     if (isUDotKnown(ic)) // prescribed
         return;
@@ -474,7 +474,7 @@ void calcFixmanTorquePass2Outward(
         const Real*                             allEpsilon,
         SpatialVec*                             allA_GB,
         Real*                                   allUDot, 
-        Real*                                   detM) const 
+        Real*                                   detM) const override 
 {
     const bool isPrescribed = isUDotKnown(ic);
     const Vec3& eps = Vec3::getAs(&allEpsilon[uIndex]);
@@ -541,19 +541,19 @@ void multiplyByMPass2Inward(
     tau = F[1];
 }
 
-const SpatialVec& getHCol(const SBTreePositionCache& pc, 
+SpatialVec getHCol(const SBTreePositionCache& pc, 
                           int j) const override {
-    Mat<2,3,Vec3> H = Mat<2,3,Vec3>::getAs(&pc.storageForH[2*uIndex]);
-    SpatialVec& col = H(j);
+    const Mat<2,3,Vec3>& H = Mat<2,3,Vec3>::getAs(&pc.storageForH[2*uIndex]);
+    SpatialVec col = H(j);
     col = SpatialVec(Vec3(0), Vec3(0));
     col[1][j] = 1;
     return col;
 }
 
-const SpatialVec& getH_FMCol(const SBTreePositionCache& pc, 
+SpatialVec getH_FMCol(const SBTreePositionCache& pc, 
                              int j) const override {
-    Mat<2,3,Vec3> H = Mat<2,3,Vec3>::getAs(&pc.storageForH_FM[2*uIndex]);
-    SpatialVec& col = H(j);
+    const Mat<2,3,Vec3>& H = Mat<2,3,Vec3>::getAs(&pc.storageForH_FM[2*uIndex]);
+    SpatialVec col = H(j);
     col = SpatialVec(Vec3(0), Vec3(0));
     col[1][j] = 1;
     return col;

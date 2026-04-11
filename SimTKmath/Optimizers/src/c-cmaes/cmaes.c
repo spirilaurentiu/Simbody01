@@ -194,7 +194,7 @@ void cmaes_FATAL(char const *s1, char const *s2,
 
 /* ------------------- Locally visibly ----------------------- */
 
-static char * getTimeStr(void); 
+static char * getTimeStr(); 
 static void TestMinStdDevs( cmaes_t *);
 /* static void WriteMaxErrorInfo( cmaes_t *); */
 
@@ -232,7 +232,7 @@ static const char * c_cmaes_version = "3.20.00.beta";
 /* --------------------------------------------------------- */
 
 static char *
-getTimeStr(void) {
+getTimeStr() {
   time_t tm = time(NULL);
   static char s[33];
 

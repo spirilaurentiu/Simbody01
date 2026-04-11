@@ -32,25 +32,24 @@ Declares the MobilizedBody::Ground class. **/
 namespace SimTK {
 
 /** This is a special type of "mobilized" body generated automatically by
-Simbody as a placeholder for Ground in the 0th slot for a 
-SimbodyMatterSubsystem's mobilized bodies; don't create this yourself. The body 
-type will also be Ground. You can think of this as a Weld-like mobilizer that 
-connects the Ground body to the world, located at the Ground origin. The 
-reaction force in this mobilizer represents the total torque and force 
+Simbody as a placeholder for Ground in the 0th slot for a
+SimbodyMatterSubsystem's mobilized bodies; don't create this yourself. The body
+type will also be Ground. You can think of this as a Weld-like mobilizer that
+connects the Ground body to the world, located at the Ground origin. The
+reaction force in this mobilizer represents the total torque and force
 applied by the System to Ground. This mobilizer is not available for
 users -- if you want to weld something to Ground use MobilizedBody::Weld
-instead. 
+instead.
 @see MobilizedBody::Weld, SimbodyMatterSubsystem::getGround(),
      SimbodyMatterSubsystem::updGround() **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Ground : public MobilizedBody {
-public:
+    public:
     Ground();
 
     /** Add some artwork to Ground where the Visualizer can find it. **/
-    Ground& addBodyDecoration(const Transform& X_GD, 
-                              const DecorativeGeometry& artwork) 
-    {
-        (void)MobilizedBody::addBodyDecoration(X_GD,artwork); return *this;
+    Ground& addBodyDecoration(const Transform& X_GD, const DecorativeGeometry& artwork) {
+        (void)MobilizedBody::addBodyDecoration(X_GD, artwork);
+        return *this;
     }
 
     /** @cond **/ // hide from Doxygen
@@ -61,6 +60,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_GROUND_H_
-
-
-

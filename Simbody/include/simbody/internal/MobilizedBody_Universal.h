@@ -38,51 +38,56 @@ these angles so qdot=u for this mobilizer.
 This mobilizer is badly behaved when the second rotation is near 90 degrees (no
 worse than a real U-joint, though). **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Universal : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Universal. **/
-    Universal() {}
+    Universal() {
+    }
 
-    /** Create a %Universal mobilizer between an existing parent (inboard) 
-    body P and a new child (outboard) body B created by copying the given 
-    \a bodyInfo into a privately-owned Body within the constructed 
+    /** Create a %Universal mobilizer between an existing parent (inboard)
+    body P and a new child (outboard) body B created by copying the given
+    \a bodyInfo into a privately-owned Body within the constructed
     %MobilizedBody object. Specify the mobilizer frames F fixed to parent P and
-    M fixed to child B. 
+    M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Universal(MobilizedBody& parent, const Transform& X_PF,
-              const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    Universal(MobilizedBody& parent,
+              const Transform& X_PF,
+              const Body& bodyInfo,
+              const Transform& X_BM,
+              Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Universal(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Universal(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
 
     Universal& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Universal& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Universal& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Universal& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Universal& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Universal& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Universal& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
     /** @cond **/ // Don't let doxygen see this
-    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Universal, UniversalImpl, 
-                                             MobilizedBody);
+    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Universal, UniversalImpl, MobilizedBody);
     /** @endcond **/
 };
 
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_UNIVERSAL_H_
-
-
-

@@ -34,7 +34,7 @@ namespace SimTK {
 
 /** Three mobilities -- unrestricted orientation modeled with a
 quaternion which is never singular. A modeling option allows the
-joint to use a 1-2-3 Euler sequence (identical to a Gimbal) 
+joint to use a 1-2-3 Euler sequence (identical to a Gimbal)
 instead. The three generalized speeds u for this mobilizer are always
 the three measure numbers of the angular velocity vector w_FM, the
 relative angular velocity of the outboard M frame in the inboard F frame,
@@ -42,46 +42,57 @@ expressed in the F frame. That is unchanged by setting the "use Euler
 angles" modeling option, so the generalized speeds differ from those of
 a Gimbal joint. Note that qdot != u for this mobilizer. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Ball : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Ball. **/
-    Ball() {}
+    Ball() {
+    }
 
-    /** Create a %Ball mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Ball mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Ball(MobilizedBody& parent, const Transform& X_PF,
-         const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    Ball(MobilizedBody& parent,
+         const Transform& X_PF,
+         const Body& bodyInfo,
+         const Transform& X_BM,
+         Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Ball(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Ball(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     Ball& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Ball& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Ball& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Ball& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Ball& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Ball& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Ball& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     // This is just a nicer name for the generalized coordinate.
     Ball& setDefaultRotation(const Rotation& R_FM) {
         return setDefaultQ(R_FM.convertRotationToQuaternion());
     }
-    Rotation getDefaultRotation() const {return Rotation(getDefaultQ());}
+    Rotation getDefaultRotation() const {
+        return Rotation(getDefaultQ());
+    }
 
     // This is used only for visualization.
     Ball& setDefaultRadius(Real r);
@@ -102,7 +113,7 @@ public:
 
     const Vec4& getMyPartQ(const State&, const Vector& qlike) const;
     const Vec3& getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Vec4& updMyPartQ(const State&, Vector& qlike) const;
     Vec3& updMyPartU(const State&, Vector& ulike) const;
 
@@ -115,6 +126,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_BALL_H_
-
-
-

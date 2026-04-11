@@ -33,7 +33,7 @@ namespace SimTK {
 
 /** Zero mobilities. This degenerate "mobilizer" serves only to weld together
 the M frame of a body to the F frame on its parent. It has no generalized
-coordinates or speeds. Note that there is no "reverse" weld, because "reverse" 
+coordinates or speeds. Note that there is no "reverse" weld, because "reverse"
 for a mobilizer refers to how the q's and u's are defined and there are none.
 
 You can use this (im)mobilizer to create a composite rigid body from simpler
@@ -41,39 +41,43 @@ rigid bodies. Although the effect is as though the bodies were combined, they
 are still tracked separately so per-body information remains available. You can
 also get the reaction force at the weld in the usual manner. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Weld : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Weld. **/
     Weld() {};
 
-    /** Create a %Weld mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Weld mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Weld(MobilizedBody& parent, const Transform& X_PF,
-         const Body& bodyInfo,  const Transform& X_BM);
+    Weld(MobilizedBody& parent, const Transform& X_PF, const Body& bodyInfo, const Transform& X_BM);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
     Weld(MobilizedBody& parent, const Body& bodyInfo);
 
     Weld& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Weld& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Weld& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Weld& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Weld& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Weld& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Weld& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     /** @cond **/ // hide from Doxygen
@@ -84,6 +88,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_WELD_H_
-
-
-

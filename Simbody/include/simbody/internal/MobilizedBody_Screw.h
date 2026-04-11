@@ -37,49 +37,57 @@ common z axis of the inboard and outboard mobilizer frames. A
 q is the rotation angle in radians, the translation is always
 pitch*q. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Screw : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Screw. **/
-    Screw() {}
+    Screw() {
+    }
 
-    /** Create a %Screw mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Screw mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Screw(MobilizedBody& parent, const Transform& X_PF,
-          const Body& bodyInfo,  const Transform& X_BM,
-          Real pitch, Direction=Forward);
+    Screw(MobilizedBody& parent,
+          const Transform& X_PF,
+          const Body& bodyInfo,
+          const Transform& X_BM,
+          Real pitch,
+          Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Screw(MobilizedBody& parent, const Body& bodyInfo, Real pitch, 
-          Direction=Forward);
+    Screw(MobilizedBody& parent, const Body& bodyInfo, Real pitch, Direction = Forward);
 
 
     Screw& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Screw& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Screw& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Screw& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Screw& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Screw& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Screw& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     Screw& setDefaultPitch(Real pitch);
-    Real   getDefaultPitch() const;
+    Real getDefaultPitch() const;
 
     Screw& setDefaultQ(Real);
-    Real   getDefaultQ() const;
+    Real getDefaultQ() const;
 
     Real getQ(const State&) const;
     Real getQDot(const State&) const;
@@ -92,7 +100,7 @@ public:
 
     Real getMyPartQ(const State&, const Vector& qlike) const;
     Real getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Real& updMyPartQ(const State&, Vector& qlike) const;
     Real& updMyPartU(const State&, Vector& ulike) const;
 
@@ -104,6 +112,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_SCREW_H_
-
-
-

@@ -31,46 +31,54 @@ Declares the MobilizedBody::Translation class. **/
 
 namespace SimTK {
 
-/** Three translational mobilities describing the Cartesian motion of a point. 
+/** Three translational mobilities describing the Cartesian motion of a point.
 The generalized coordinates q are x,y,z translations of the M (outboard) frame
 origin Mo along the parent (inboard) F frame axes. The generalized speeds u are
 the relative velocity v_FM of M's origin in F, so qdot=u for this mobilizer. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Translation : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Translation. **/
-    Translation() {}
+    Translation() {
+    }
 
-    /** Create a %Translation mobilizer between an existing parent (inboard) 
-    body P and a new child (outboard) body B created by copying the given 
-    \a bodyInfo into a privately-owned Body within the constructed 
+    /** Create a %Translation mobilizer between an existing parent (inboard)
+    body P and a new child (outboard) body B created by copying the given
+    \a bodyInfo into a privately-owned Body within the constructed
     %MobilizedBody object. Specify the mobilizer frames F fixed to parent P and
-    M fixed to child B. 
+    M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Translation(MobilizedBody& parent, const Transform& X_PF,
-                const Body& bodyInfo,  const Transform& X_BM, 
-                Direction=Forward);
+    Translation(MobilizedBody& parent,
+                const Transform& X_PF,
+                const Body& bodyInfo,
+                const Transform& X_BM,
+                Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Translation(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Translation(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     Translation& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Translation& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Translation& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Translation& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Translation& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Translation& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Translation& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     /** This is just a nicer name for setting this mobilizer's topological
@@ -90,7 +98,7 @@ public:
     the _cross-mobilizer_ translation vector p_FM, not location in the Ground
     frame. **/
     void setTranslation(State& s, const Vec3& p_FM) const {
-        setQ(s,p_FM);
+        setQ(s, p_FM);
     }
 
     /** Get the current value of the q's for this mobilizer from the given
@@ -104,7 +112,7 @@ public:
     the _cross-mobilizer_ velocity vector v_FM, not velocity in the Ground
     frame. **/
     void setVelocity(State& s, const Vec3& v_FM) const {
-        setU(s,v_FM);
+        setU(s, v_FM);
     }
 
     /** Get the current value of the u's for this mobilizer from the given
@@ -127,7 +135,7 @@ public:
 
     DEPRECATED_14("use setTranslation() instead")
     void setMobilizerTranslation(State& s, const Vec3& p_FM) const {
-        setTranslation(s,p_FM);
+        setTranslation(s, p_FM);
     }
 
     DEPRECATED_14("use getTranslation() instead")
@@ -137,7 +145,7 @@ public:
 
     DEPRECATED_14("use setVelocity() instead")
     void setMobilizerVelocity(State& s, const Vec3& v_FM) const {
-        setVelocity(s,v_FM);
+        setVelocity(s, v_FM);
     }
 
     DEPRECATED_14("use getVelocity() instead")
@@ -165,19 +173,15 @@ public:
 
     const Vec3& getMyPartQ(const State&, const Vector& qlike) const;
     const Vec3& getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Vec3& updMyPartQ(const State&, Vector& qlike) const;
     Vec3& updMyPartU(const State&, Vector& ulike) const;
 
     /** @cond **/ // hide from Doxygen
-    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Translation, TranslationImpl, 
-                                             MobilizedBody);
+    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Translation, TranslationImpl, MobilizedBody);
     /** @endcond **/
 };
 
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_TRANSLATION_H_
-
-
-

@@ -24,8 +24,8 @@
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
 
-#include "SimTKcommon/basics.h"
 #include "SimTKcommon/Simmatrix.h"
+#include "SimTKcommon/basics.h"
 #include "SimTKcommon/internal/State.h"
 #include "SimTKcommon/internal/System.h"
 
@@ -65,7 +65,7 @@ class DecorativeGeometry;
  *
  * If the concrete System::Guts class also has an opaque implementation,
  * as it will for concrete Systems provided by Simbody, then
- * the System author should expose only the data-free handle class 
+ * the System author should expose only the data-free handle class
  * derived from System.
  */
 class SimTK_SimTKCOMMON_EXPORT System::Guts {
@@ -74,39 +74,37 @@ class SimTK_SimTKCOMMON_EXPORT System::Guts {
 
     // This is the only data member in this class.
     GutsRep* rep; // opaque implementation of System::Guts base class.
-public:
-
-        //////////////////////
-        // CONSTRUCTION     //
-        //////////////////////
+    public:
+    //////////////////////
+    // CONSTRUCTION     //
+    //////////////////////
 
     // Note that this serves as a default constructor since both arguments have defaults.
-    explicit Guts(const String& name="<NONAME>", 
-                  const String& version="0.0.0");
+    explicit Guts(const String& name = "<NONAME>", const String& version = "0.0.0");
     virtual ~Guts();
 
-    const String& getName()    const;
+    const String& getName() const;
     const String& getVersion() const;
 
     void setHasTimeAdvancedEvents(bool hasEm);
     bool hasTimeAdvancedEvents() const;
 
-        //////////////////////////////
-        // EVALUATION (REALIZATION) //
-        //////////////////////////////
+    //////////////////////////////
+    // EVALUATION (REALIZATION) //
+    //////////////////////////////
 
     // These are the routines to which the System class forwards requests.
 
     const State& getDefaultState() const;
-    State&       updDefaultState();
+    State& updDefaultState();
 
     void realize(const State& s, Stage g = Stage::HighestRuntime) const;
 
     SubsystemIndex adoptSubsystem(Subsystem& child);
 
     int getNumSubsystems() const;
-    const Subsystem& getSubsystem(SubsystemIndex)   const;
-    Subsystem&       updSubsystem(SubsystemIndex);
+    const Subsystem& getSubsystem(SubsystemIndex) const;
+    Subsystem& updSubsystem(SubsystemIndex);
 
     // Obtain the owner handle for this System::Guts object.
     const System& getSystem() const;
@@ -115,10 +113,20 @@ public:
     void setOwnerHandle(System&);
     bool hasOwnerHandle() const;
 
-    explicit Guts(class GutsRep* r) : rep(r) { }
-    bool           hasRep() const {return rep!=0;}
-    const GutsRep& getRep() const {assert(rep); return *rep;}
-    GutsRep&       updRep() const {assert(rep); return *rep;}
+    explicit Guts(class GutsRep* r)
+        : rep(r) {
+    }
+    bool hasRep() const {
+        return rep != 0;
+    }
+    const GutsRep& getRep() const {
+        assert(rep);
+        return *rep;
+    }
+    GutsRep& updRep() const {
+        assert(rep);
+        return *rep;
+    }
 
     bool systemTopologyHasBeenRealized() const;
     StageVersion getSystemTopologyCacheVersion() const;
@@ -134,61 +142,60 @@ public:
     // the System stage is already at or greater than the indicated stage.
 
     /*! <!-- Stage info --> */
-    const void PrintStages(void) const
-    {
-            PrintDefaultStateStages();
-            PrintSubsystemsStages();
+    const void PrintStages() const {
+        PrintDefaultStateStages();
+        PrintSubsystemsStages();
     }
 
-    const void PrintDefaultStateStages(void) const;
-    const void PrintSubsystemsStages(void) const;
+    const void PrintDefaultStateStages() const;
+    const void PrintSubsystemsStages() const;
 
     const State& realizeTopology() const;
     void realizeModel(State&) const;
-    void realizeInstance    (const State& s) const;
-    void realizeTime        (const State& s) const;
-    void realizePosition    (const State& s) const;
-    void realizeVelocity    (const State& s) const;
-    void realizeDynamics    (const State& s) const;
+    void realizeInstance(const State& s) const;
+    void realizeTime(const State& s) const;
+    void realizePosition(const State& s) const;
+    void realizeVelocity(const State& s) const;
+    void realizeDynamics(const State& s) const;
     void realizeAcceleration(const State& s) const;
-    void realizeReport      (const State& s) const;
+    void realizeReport(const State& s) const;
 
     // These wrap the other virtual methods.
-    void multiplyByN(const State& state, const Vector& u, 
-                     Vector& dq) const;
-    void multiplyByNTranspose(const State& state, const Vector& fq, 
-                              Vector& fu) const;
-    void multiplyByNPInv(const State& state, const Vector& dq, 
-                         Vector& u) const;
-    void multiplyByNPInvTranspose(const State& state, const Vector& fu, 
-                                  Vector& fq) const;
+    void multiplyByN(const State& state, const Vector& u, Vector& dq) const;
+    void multiplyByNTranspose(const State& state, const Vector& fq, Vector& fu) const;
+    void multiplyByNPInv(const State& state, const Vector& dq, Vector& u) const;
+    void multiplyByNPInvTranspose(const State& state, const Vector& fu, Vector& fq) const;
 
     bool prescribeQ(State&) const;
     bool prescribeU(State&) const;
     void getFreeQIndex(const State&, Array_<SystemQIndex>& freeQs) const;
     void getFreeUIndex(const State&, Array_<SystemUIndex>& freeUs) const;
 
-    void projectQ(State&, Vector& qErrEst, 
-                  const ProjectOptions& options, ProjectResults& results) const;
-    void projectU(State&, Vector& uErrEst, 
-                  const ProjectOptions& options, ProjectResults& results) const;
+    void projectQ(State&, Vector& qErrEst, const ProjectOptions& options, ProjectResults& results) const;
+    void projectU(State&, Vector& uErrEst, const ProjectOptions& options, ProjectResults& results) const;
 
-    void handleEvents
-        (State&, Event::Cause, const Array_<EventId>& eventIds,
-         const HandleEventsOptions& options,
-         HandleEventsResults& results) const;
+    void handleEvents(State&,
+                      Event::Cause,
+                      const Array_<EventId>& eventIds,
+                      const HandleEventsOptions& options,
+                      HandleEventsResults& results) const;
     void reportEvents(const State&, Event::Cause, const Array_<EventId>& eventIds) const;
     void calcEventTriggerInfo(const State&, Array_<EventTriggerInfo>&) const;
-    void calcTimeOfNextScheduledEvent(const State&, Real& tNextEvent, Array_<EventId>& eventIds, bool includeCurrentTime) const;
-    void calcTimeOfNextScheduledReport(const State&, Real& tNextEvent, Array_<EventId>& eventIds, bool includeCurrentTime) const;
+    void calcTimeOfNextScheduledEvent(const State&,
+                                      Real& tNextEvent,
+                                      Array_<EventId>& eventIds,
+                                      bool includeCurrentTime) const;
+    void calcTimeOfNextScheduledReport(const State&,
+                                       Real& tNextEvent,
+                                       Array_<EventId>& eventIds,
+                                       bool includeCurrentTime) const;
 
-    void calcDecorativeGeometryAndAppend(const State&, Stage, 
-                                         Array_<DecorativeGeometry>&) const;
+    void calcDecorativeGeometryAndAppend(const State&, Stage, Array_<DecorativeGeometry>&) const;
 
 
-protected:
-    Guts(const Guts&);  // copies the base class; for use from derived class copy constructors
-    
+    protected:
+    Guts(const Guts&); // copies the base class; for use from derived class copy constructors
+
     // The destructor is already virtual; see above.
 
     virtual System::Guts* cloneImpl() const = 0;
@@ -202,78 +209,106 @@ protected:
     // is at the level just prior to the one indicated here. For example,
     // realizeVelocityImpl() will be called only if the passed-in State
     // has been determined to have its system stage exactly Stage::Position.
-    virtual int realizeTopologyImpl(State& state)       const {return 0;}
-    virtual int realizeModelImpl   (State& state)       const {return 0;}
-    virtual int realizeInstanceImpl(const State& state) const {return 0;}
-    virtual int realizeTimeImpl    (const State& state) const {return 0;}
-    virtual int realizePositionImpl(const State& state) const {return 0;}
-    virtual int realizeVelocityImpl(const State& state) const {return 0;}
-    virtual int realizeDynamicsImpl(const State& state) const {return 0;}
-    virtual int realizeAccelerationImpl(const State& state) const {return 0;}
-    virtual int realizeReportImpl  (const State& state) const {return 0;}
+    virtual int realizeTopologyImpl(State& state) const {
+        return 0;
+    }
+    virtual int realizeModelImpl(State& state) const {
+        return 0;
+    }
+    virtual int realizeInstanceImpl(const State& state) const {
+        return 0;
+    }
+    virtual int realizeTimeImpl(const State& state) const {
+        return 0;
+    }
+    virtual int realizePositionImpl(const State& state) const {
+        return 0;
+    }
+    virtual int realizeVelocityImpl(const State& state) const {
+        return 0;
+    }
+    virtual int realizeDynamicsImpl(const State& state) const {
+        return 0;
+    }
+    virtual int realizeAccelerationImpl(const State& state) const {
+        return 0;
+    }
+    virtual int realizeReportImpl(const State& state) const {
+        return 0;
+    }
 
-    virtual void multiplyByNImpl(const State& state, const Vector& u, 
-                                 Vector& dq) const;
-    virtual void multiplyByNTransposeImpl(const State& state, const Vector& fq, 
-                                          Vector& fu) const;
-    virtual void multiplyByNPInvImpl(const State& state, const Vector& dq, 
-                                     Vector& u) const;
-    virtual void multiplyByNPInvTransposeImpl(const State& state, const Vector& fu, 
-                                              Vector& fq) const;
+    virtual void multiplyByNImpl(const State& state, const Vector& u, Vector& dq) const;
+    virtual void multiplyByNTransposeImpl(const State& state, const Vector& fq, Vector& fu) const;
+    virtual void multiplyByNPInvImpl(const State& state, const Vector& dq, Vector& u) const;
+    virtual void multiplyByNPInvTransposeImpl(const State& state, const Vector& fu, Vector& fq) const;
 
     // Defaults assume no prescribed motion; hence, no change made.
-    virtual bool prescribeQImpl(State&) const {return false;}
-    virtual bool prescribeUImpl(State&) const {return false;}
+    virtual bool prescribeQImpl(State&) const {
+        return false;
+    }
+    virtual bool prescribeUImpl(State&) const {
+        return false;
+    }
 
 
-    // Defaults assume no constraints and return success meaning "all 
+    // Defaults assume no constraints and return success meaning "all
     // constraints satisfied".
-    virtual void projectQImpl(State& state, Vector& qErrEst, 
-             const ProjectOptions& options, ProjectResults& results) const
-    {   results.clear(); results.setExitStatus(ProjectResults::Succeeded); }
-    virtual void projectUImpl(State& state, Vector& uErrEst, 
-             const ProjectOptions& options, ProjectResults& results) const
-    {   results.clear(); results.setExitStatus(ProjectResults::Succeeded); }
+    virtual void projectQImpl(State& state,
+                              Vector& qErrEst,
+                              const ProjectOptions& options,
+                              ProjectResults& results) const {
+        results.clear();
+        results.setExitStatus(ProjectResults::Succeeded);
+    }
+    virtual void projectUImpl(State& state,
+                              Vector& uErrEst,
+                              const ProjectOptions& options,
+                              ProjectResults& results) const {
+        results.clear();
+        results.setExitStatus(ProjectResults::Succeeded);
+    }
 
-    virtual void handleEventsImpl
-       (State& state, Event::Cause cause, const Array_<EventId>& eventIds,
-        const HandleEventsOptions& options, HandleEventsResults& results) const;
+    virtual void handleEventsImpl(State& state,
+                                  Event::Cause cause,
+                                  const Array_<EventId>& eventIds,
+                                  const HandleEventsOptions& options,
+                                  HandleEventsResults& results) const;
 
-    virtual int reportEventsImpl(const State& state, Event::Cause cause, 
-                                 const Array_<EventId>& eventIds) const;
+    virtual int
+    reportEventsImpl(const State& state, Event::Cause cause, const Array_<EventId>& eventIds) const;
 
-    virtual int calcEventTriggerInfoImpl(const State& state, 
-                                         Array_<EventTriggerInfo>& info) const;
+    virtual int calcEventTriggerInfoImpl(const State& state, Array_<EventTriggerInfo>& info) const;
 
-    virtual int calcTimeOfNextScheduledEventImpl
-       (const State& state, Real& tNextEvent, Array_<EventId>& eventIds, 
-        bool includeCurrentTime) const;
-    virtual int calcTimeOfNextScheduledReportImpl
-       (const State& state, Real& tNextEvent, Array_<EventId>& eventIds, 
-        bool includeCurrentTime) const;
+    virtual int calcTimeOfNextScheduledEventImpl(const State& state,
+                                                 Real& tNextEvent,
+                                                 Array_<EventId>& eventIds,
+                                                 bool includeCurrentTime) const;
+    virtual int calcTimeOfNextScheduledReportImpl(const State& state,
+                                                  Real& tNextEvent,
+                                                  Array_<EventId>& eventIds,
+                                                  bool includeCurrentTime) const;
 
 
     // Default is that all the state variables are free.
-    virtual void getFreeQIndexImpl
-       (const State& s, Array_<SystemQIndex>& freeQs) const {
+    virtual void getFreeQIndexImpl(const State& s, Array_<SystemQIndex>& freeQs) const {
         const unsigned nq = (unsigned)s.getNQ();
         freeQs.resize(nq);
-        for (unsigned i=0; i<nq; ++i)
+        for (unsigned i = 0; i < nq; ++i) {
             freeQs[i] = SystemQIndex(i);
+        }
     }
-    virtual void getFreeUIndexImpl
-       (const State& s, Array_<SystemUIndex>& freeUs) const  {
+    virtual void getFreeUIndexImpl(const State& s, Array_<SystemUIndex>& freeUs) const {
         const unsigned nu = (unsigned)s.getNU();
         freeUs.resize(nu);
-        for (unsigned i=0; i<nu; ++i)
+        for (unsigned i = 0; i < nu; ++i) {
             freeUs[i] = SystemUIndex(i);
+        }
     }
 
-private:
+    private:
     Guts& operator=(const Guts&); // suppress default copy assignment operator
 
     class EventTriggerInfoRep;
-
 };
 
 

@@ -31,8 +31,8 @@ Declares the MobilizedBody::Pin class. **/
 
 namespace SimTK {
 
-/** Provides one rotational mobility about the common z axis of the F and M 
-frames of the mobilizer. 
+/** Provides one rotational mobility about the common z axis of the F and M
+frames of the mobilizer.
 
 If you want rotation about a different direction, rotate the F and M frames
 when you define the mobilized body, so that the z axes are in the desired
@@ -44,63 +44,79 @@ generalized speed u is the rotation rate in radians/time unit, with qdot=u.
 Synonyms: Torsion, Revolute.
 **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Pin : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Pin. **/
-    Pin() {}
+    Pin() {
+    }
 
-    /** Create a %Pin mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Pin mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Pin(MobilizedBody& parent, const Transform& X_PF,
-        const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    Pin(MobilizedBody& parent,
+        const Transform& X_PF,
+        const Body& bodyInfo,
+        const Transform& X_BM,
+        Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Pin(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
-    
+    Pin(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
+
     // SPECIALIZED INTERFACE FOR PIN MOBILIZER
 
     /** Set the value that the pin angle should have in the default state. If
     unspecified the initial angle will be zero. **/
-    Pin& setDefaultAngle(Real angleInRad) {return setDefaultQ(angleInRad);}
+    Pin& setDefaultAngle(Real angleInRad) {
+        return setDefaultQ(angleInRad);
+    }
     /** Get the value that the pin angle will have in the default state. **/
-    Real getDefaultAngle() const          {return getDefaultQ();}
+    Real getDefaultAngle() const {
+        return getDefaultQ();
+    }
 
-        // Friendly, mobilizer-specific access to generalized coords and speeds.
+    // Friendly, mobilizer-specific access to generalized coords and speeds.
 
     /** Set the pin joint angle (generalized coordinate q) in the given state.
     The angle is in radians. **/
-    void setAngle(State& s, Real angleInRad) {setQ(s, angleInRad);}
+    void setAngle(State& s, Real angleInRad) {
+        setQ(s, angleInRad);
+    }
     /** Get the value that this pin joint's angular coordinate has in the given
     state. The result is in radians. **/
-    Real getAngle(const State& s) const {return getQ(s);}
+    Real getAngle(const State& s) const {
+        return getQ(s);
+    }
 
     /** Set the rotation rate (generalized speed u) for this pin joint in the
     given state. The rate is in radians/time unit. **/
-    void setRate(State& s, Real rateInRadPerTime) {setU(s, rateInRadPerTime);}
-    /** Get the current rotation rate (generalized speed u) that this pin 
+    void setRate(State& s, Real rateInRadPerTime) {
+        setU(s, rateInRadPerTime);
+    }
+    /** Get the current rotation rate (generalized speed u) that this pin
     mobilizer has in the given state. The rate is in radians/time unit. **/
-    Real getRate(const State& s) const {return getU(s);}
+    Real getRate(const State& s) const {
+        return getU(s);
+    }
 
     // Mobility forces are "u-like", that is, one per dof.
     /** Get the generalized force corresponding to this pin mobilizer in the
     given array of mobility forces. **/
     Real getAppliedPinTorque(const State& s, const Vector& mobilityForces) const {
-        return getMyPartU(s,mobilityForces);
+        return getMyPartU(s, mobilityForces);
     }
     /** Add in a torque to the generalized force element corresponding to this
     pin mobilizer in the given array of mobility forces. **/
     void applyPinTorque(const State& s, Real torque, Vector& mobilityForces) const {
-        updMyPartU(s,mobilityForces) += torque;
+        updMyPartU(s, mobilityForces) += torque;
     }
 
-        // STANDARDIZED MOBILIZED BODY INTERFACE
+    // STANDARDIZED MOBILIZED BODY INTERFACE
 
 
-        // access to generalized coordinates q and generalized speeds u
+    // access to generalized coordinates q and generalized speeds u
     Pin& setDefaultQ(Real);
     Real getDefaultQ() const;
 
@@ -115,21 +131,31 @@ public:
 
     Real getMyPartQ(const State&, const Vector& qlike) const;
     Real getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Real& updMyPartQ(const State&, Vector& qlike) const;
     Real& updMyPartU(const State&, Vector& ulike) const;
 
-        // specialize return type for convenience
-    Pin& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g)
-      { (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this; }
-    Pin& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g)
-      { (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this; }
-    Pin& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g)
-      { (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this; }
-    Pin& setDefaultInboardFrame(const Transform& X_PF)
-      { (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this; }
-    Pin& setDefaultOutboardFrame(const Transform& X_BM)
-      { (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this; }
+    // specialize return type for convenience
+    Pin& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
+    }
+    Pin& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
+    }
+    Pin& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
+    }
+    Pin& setDefaultInboardFrame(const Transform& X_PF) {
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
+    }
+    Pin& setDefaultOutboardFrame(const Transform& X_BM) {
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
+    }
 
     /** @cond **/ // Don't let doxygen see this
     SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Pin, PinImpl, MobilizedBody);
@@ -139,6 +165,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_PIN_H_
-
-
-

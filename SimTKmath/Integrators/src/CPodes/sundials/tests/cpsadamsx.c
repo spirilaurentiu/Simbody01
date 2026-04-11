@@ -55,8 +55,8 @@
 #define P2_TOUT_MULT  RCONST(10.0)
 
 /* Private Helper Functions */
-static void Problem1(void);
-static void Problem2(void);
+static void Problem1();
+static void Problem2();
 static realtype MaxError(N_Vector y, realtype t);
 static void PrintFinalStats(void *cpode_mem);
 
@@ -66,7 +66,7 @@ static int f1(realtype t, N_Vector y, N_Vector ydot, void *f_data);
 static int res2(realtype t, N_Vector y, N_Vector yp, N_Vector res, void *f_data);
 static int f2(realtype t, N_Vector y, N_Vector ydot, void *f_data);
 
-int main(void)
+int main()
 {
 
   printf("Van der Pol\n\n");
@@ -77,7 +77,7 @@ int main(void)
   return(0);
 }
 
-static void Problem1(void)
+static void Problem1()
 {
   void *fct;
   void *cpode_mem;
@@ -149,7 +149,7 @@ static int f1(realtype t, N_Vector y, N_Vector ydot, void *f_data)
 
 
 
-static void Problem2(void)
+static void Problem2()
 {
   void *fct;
   void *cpode_mem;

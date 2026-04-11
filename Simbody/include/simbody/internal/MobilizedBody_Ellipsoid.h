@@ -35,56 +35,61 @@ namespace SimTK {
 surface of an ellipsoid fixed to the parent (inboard) body.
 
 The generalized coordinates q are the same as for a Ball (Orientation)
-mobilizer, that is, a quaternion or an x-y-z body-fixed Euler sequence depending 
-on the "use Euler angles" modeling option. The three generalized speeds u for 
+mobilizer, that is, a quaternion or an x-y-z body-fixed Euler sequence depending
+on the "use Euler angles" modeling option. The three generalized speeds u for
 this mobilizer are also the same as for a Ball mobilizer, that is
 the three measure numbers of the angular velocity vector w_FM, the
 relative angular velocity of the outboard M frame in the inboard F frame,
 expressed in the F frame. That is unchanged by setting the "use Euler
 angles" modeling option. Note that qdot != u for this mobilizer. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Ellipsoid : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Ellipsoid. **/
-    Ellipsoid() {}
-      
-    /** Create an %Ellipsoid mobilizer between an existing parent (inboard) body 
-    P and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
+    Ellipsoid() {
+    }
+
+    /** Create an %Ellipsoid mobilizer between an existing parent (inboard) body
+    P and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
     Specify the mobilizer frames F fixed to parent P and M fixed to child B.
-    The ellipsoid is placed on the mobilizer's inboard frame F, 
+    The ellipsoid is placed on the mobilizer's inboard frame F,
     with semi-axis dimensions given in \a radii along F's x,y,z respectively.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Ellipsoid(MobilizedBody& parent, const Transform& X_PF,
-              const Body& bodyInfo,  const Transform& X_BM,
-              const Vec3& radii, Direction=Forward);
+    Ellipsoid(MobilizedBody& parent,
+              const Transform& X_PF,
+              const Body& bodyInfo,
+              const Transform& X_BM,
+              const Vec3& radii,
+              Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Ellipsoid(MobilizedBody& parent,  const Body& bodyInfo,
-              const Vec3& radii, Direction=Forward);
+    Ellipsoid(MobilizedBody& parent, const Body& bodyInfo, const Vec3& radii, Direction = Forward);
 
     /** This constructor assumes you'll set the ellipsoid dimensions later;
     meanwhile it uses some default dimensions. **/
-    Ellipsoid(MobilizedBody& parent, const Transform& X_PF,
-              const Body& bodyInfo,  const Transform& X_BM,
-              Direction=Forward);
+    Ellipsoid(MobilizedBody& parent,
+              const Transform& X_PF,
+              const Body& bodyInfo,
+              const Transform& X_BM,
+              Direction = Forward);
 
     /** This constructor assumes you'll set the ellipsoid dimensions later;
     meanwhile it uses some default dimensions. The parent and child body frames
     are used as the mobilizer frames. **/
-    Ellipsoid(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Ellipsoid(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     /** Modify the default semi-axis dimensions of the ellipsoid, given in
     the F frame. These are usually set on construction. **/
     Ellipsoid& setDefaultRadii(const Vec3& radii);
-    /** Get the default semi-axis dimensions of the ellipsoid as specified 
+    /** Get the default semi-axis dimensions of the ellipsoid as specified
     during construction or via setDefaultRadii(). **/
     const Vec3& getDefaultRadii() const;
 
 
     /** Provide a default orientation for this mobilizer if you don't want to
-    start with the identity rotation (that is, alignment of the F and M 
+    start with the identity rotation (that is, alignment of the F and M
     frames). This is the orientation the mobilizer will have in the default
     state for the containing System. The supplied Rotation will be converted
     to a quaternion and used as the four generalized coordinates q. **/
@@ -93,32 +98,41 @@ public:
     }
     /** Get the value for the default orientation of this mobilizer; unless
     changed by setDefaultRotation() it will be the identity rotation. **/
-    Rotation getDefaultRotation() const {return Rotation(getDefaultQ());}
+    Rotation getDefaultRotation() const {
+        return Rotation(getDefaultQ());
+    }
 
     Ellipsoid& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Ellipsoid& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Ellipsoid& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Ellipsoid& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Ellipsoid& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Ellipsoid& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Ellipsoid& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
-
 
 
     // Generic default state Topology methods.
     const Quaternion& getDefaultQ() const;
     Quaternion& updDefaultQ();
-    Ellipsoid& setDefaultQ(const Quaternion& q) {updDefaultQ()=q; return *this;}
+    Ellipsoid& setDefaultQ(const Quaternion& q) {
+        updDefaultQ() = q;
+        return *this;
+    }
 
     const Vec4& getQ(const State&) const;
     const Vec4& getQDot(const State&) const;
@@ -131,19 +145,15 @@ public:
 
     const Vec4& getMyPartQ(const State&, const Vector& qlike) const;
     const Vec3& getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Vec4& updMyPartQ(const State&, Vector& qlike) const;
     Vec3& updMyPartU(const State&, Vector& ulike) const;
 
     /** @cond **/ // hide from Doxygen
-    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Ellipsoid, EllipsoidImpl, 
-                                             MobilizedBody);
+    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Ellipsoid, EllipsoidImpl, MobilizedBody);
     /** @endcond **/
 };
 
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_ELLIPSOID_H_
-
-
-

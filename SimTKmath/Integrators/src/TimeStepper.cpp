@@ -26,19 +26,19 @@
  * TimeStepper family of classes.
  */
 
-#include "SimTKcommon.h"
 #include "simmath/TimeStepper.h"
-
-#include "TimeStepperRep.h"
 
 #include <exception>
 #include <limits>
 
+#include "SimTKcommon.h"
+#include "TimeStepperRep.h"
+
 namespace SimTK {
 
-    ////////////////////////////////////
-    // IMPLEMENTATION OF TIME STEPPER //
-    ////////////////////////////////////
+////////////////////////////////////
+// IMPLEMENTATION OF TIME STEPPER //
+////////////////////////////////////
 
 TimeStepper::TimeStepper(const System& sys) {
     rep = new TimeStepperRep(this, sys);
@@ -50,8 +50,9 @@ TimeStepper::TimeStepper(const System& sys, Integrator& integrator) {
 }
 
 TimeStepper::~TimeStepper() {
-    if (rep && rep->myHandle==this)
+    if (rep && rep->myHandle == this) {
         delete rep;
+    }
     rep = 0;
 }
 
@@ -78,7 +79,7 @@ void TimeStepper::initialize(const State& initState) {
 }
 
 Integrator::SuccessfulStepStatus TimeStepper::stepTo(Real reportTime) {
-    return( rep->stepTo(reportTime) );
+    return (rep->stepTo(reportTime));
 }
 
 bool TimeStepper::getReportAllSignificantStates() const {
@@ -90,82 +91,86 @@ void TimeStepper::setReportAllSignificantStates(bool b) {
 }
 
 /*! <!-- Stage info --> */
-const void TimeStepper::PrintAdvancedStateStages(void) const
-{
+const void TimeStepper::PrintAdvancedStateStages() const {
     const Integrator& integ = getIntegrator();
     integ.PrintAdvancedStateStages();
-
 }
 
 /*! <!-- Stage info --> */
-const void TimeStepper::PrintInterpolatedStateStages(void) const
-{
+const void TimeStepper::PrintInterpolatedStateStages() const {
     const Integrator& integ = getIntegrator();
     integ.PrintInterpolatedStateStages();
-
 }
 
 
-    ////////////////////////////////////////
-    // IMPLEMENTATION OF TIME STEPPER REP //
-    ////////////////////////////////////////
+////////////////////////////////////////
+// IMPLEMENTATION OF TIME STEPPER REP //
+////////////////////////////////////////
 
-TimeStepperRep::TimeStepperRep(TimeStepper* handle, const System& system) 
-:   myHandle(handle), system(system), integ(0), 
-    reportAllSignificantStates(false) {}
+TimeStepperRep::TimeStepperRep(TimeStepper* handle, const System& system)
+    : myHandle(handle)
+    , system(system)
+    , integ(0)
+    , reportAllSignificantStates(false) {
+}
 
 Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
     // Handler is allowed to throw an exception if it fails since we don't
     // have a way to recover.
     HandleEventsOptions handleOpts(integ->getConstraintToleranceInUse());
 
-    if (integ->isInfinityNormInUse())
+    if (integ->isInfinityNormInUse()) {
         handleOpts.setOption(HandleEventsOptions::UseInfinityNorm);
+    }
 
     Array_<EventId> scheduledEventIds, scheduledReportIds;
     while (!integ->isSimulationOver()) {
-        Real nextScheduledEvent  = Infinity;
+        Real nextScheduledEvent = Infinity;
         Real nextScheduledReport = Infinity;
-        Real currentTime         = integ->getTime();
+        Real currentTime = integ->getTime();
         system.realize(integ->getState(), Stage::Time);
         system.realize(integ->getAdvancedState(), Stage::Time);
-        system.calcTimeOfNextScheduledEvent 
-           (integ->getState(), nextScheduledEvent,  scheduledEventIds,  
-            lastEventTime != currentTime);  // whether to allow now as an answer
-        system.calcTimeOfNextScheduledReport
-           (integ->getState(), nextScheduledReport, scheduledReportIds, 
-            lastReportTime != currentTime); // whether to allow now as an answer
+        system.calcTimeOfNextScheduledEvent(integ->getState(),
+                                            nextScheduledEvent,
+                                            scheduledEventIds,
+                                            lastEventTime
+                                                != currentTime); // whether to allow now as an answer
+        system.calcTimeOfNextScheduledReport(integ->getState(),
+                                             nextScheduledReport,
+                                             scheduledReportIds,
+                                             lastReportTime
+                                                 != currentTime); // whether to allow now as an answer
 
         Real reportTime = std::min(nextScheduledReport, time);
-        Real eventTime  = std::min(nextScheduledEvent,  time);
+        Real eventTime = std::min(nextScheduledEvent, time);
 
         //---------------- take continuous step ----------------
-        Integrator::SuccessfulStepStatus status = 
-            integ->stepTo(reportTime, eventTime);
+        Integrator::SuccessfulStepStatus status = integ->stepTo(reportTime, eventTime);
         //------------------------------------------------------
 
         Stage lowestModified = Stage::Report;
         bool shouldTerminate;
         switch (status) {
             case Integrator::ReachedStepLimit: {
-                if (reportAllSignificantStates)
+                if (reportAllSignificantStates) {
                     return status;
+                }
                 continue;
             }
             case Integrator::StartOfContinuousInterval: {
-                if (reportAllSignificantStates)
+                if (reportAllSignificantStates) {
                     return status;
+                }
                 continue;
             }
             case Integrator::ReachedReportTime: {
                 if (integ->getTime() >= nextScheduledReport) {
-                    system.reportEvents(integ->getState(),
-                        Event::Cause::Scheduled,
-                        scheduledReportIds);
+                    system.reportEvents(integ->getState(), Event::Cause::Scheduled, scheduledReportIds);
                     lastReportTime = integ->getTime();
                 }
-                if (integ->getTime() >= time || reportAllSignificantStates)
+                if (integ->getTime() >= time || reportAllSignificantStates) {
                     return status;
+                }
                 continue;
             }
             case Integrator::ReachedScheduledEvent: {
@@ -173,10 +178,10 @@ Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
                 system.handleEvents(integ->updAdvancedState(),
                                     Event::Cause::Scheduled,
                                     scheduledEventIds,
-                                    handleOpts, results);
+                                    handleOpts,
+                                    results);
                 lowestModified = results.getLowestModifiedStage();
-                shouldTerminate = 
-                    results.getExitStatus()==HandleEventsResults::ShouldTerminate;
+                shouldTerminate = results.getExitStatus() == HandleEventsResults::ShouldTerminate;
                 lastEventTime = integ->getTime();
                 break;
             }
@@ -185,10 +190,10 @@ Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
                 system.handleEvents(integ->updAdvancedState(),
                                     Event::Cause::TimeAdvanced,
                                     Array_<EventId>(),
-                                    handleOpts, results);
+                                    handleOpts,
+                                    results);
                 lowestModified = results.getLowestModifiedStage();
-                shouldTerminate = 
-                    results.getExitStatus()==HandleEventsResults::ShouldTerminate;
+                shouldTerminate = results.getExitStatus() == HandleEventsResults::ShouldTerminate;
                 break;
             }
             case Integrator::ReachedEventTrigger: {
@@ -196,10 +201,10 @@ Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
                 system.handleEvents(integ->updAdvancedState(),
                                     Event::Cause::Triggered,
                                     integ->getTriggeredEvents(),
-                                    handleOpts, results);
+                                    handleOpts,
+                                    results);
                 lowestModified = results.getLowestModifiedStage();
-                shouldTerminate = 
-                    results.getExitStatus()==HandleEventsResults::ShouldTerminate;
+                shouldTerminate = results.getExitStatus() == HandleEventsResults::ShouldTerminate;
                 break;
             }
             case Integrator::EndOfSimulation: {
@@ -207,22 +212,21 @@ Integrator::SuccessfulStepStatus TimeStepperRep::stepTo(Real time) {
                 system.handleEvents(integ->updAdvancedState(),
                                     Event::Cause::Termination,
                                     Array_<EventId>(),
-                                    handleOpts, results);
+                                    handleOpts,
+                                    results);
                 lowestModified = results.getLowestModifiedStage();
-                shouldTerminate = 
-                    results.getExitStatus()==HandleEventsResults::ShouldTerminate;
+                shouldTerminate = results.getExitStatus() == HandleEventsResults::ShouldTerminate;
                 break;
             }
-            default: assert(!"Unrecognized return from stepTo()");
+            default:
+                assert(!"Unrecognized return from stepTo()");
         }
         integ->reinitialize(lowestModified, shouldTerminate);
-        if (reportAllSignificantStates)
+        if (reportAllSignificantStates) {
             return status;
+        }
     }
     return Integrator::EndOfSimulation;
 }
 
 } // namespace SimTK
-
-
-

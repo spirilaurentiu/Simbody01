@@ -24,30 +24,32 @@
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
 
-#include "SimTKcommon.h"
-#include "simmath/internal/common.h"
 #include "simmath/Integrator.h"
+#include "simmath/internal/common.h"
+
+#include "SimTKcommon.h"
 
 namespace SimTK {
 class Integrator;
 
 /**
  * This class uses an Integrator to advance a System through time.  For example:
- * 
+ *
  * <pre>
  * TimeStepper stepper(system, integrator);
  * stepper.initialize(initialState);
  * stepper.stepTo(finalTime);
  * </pre>
- * 
- * stepTo() invokes the Integrator to advance time.  It detects events which may occur, calls event handlers as
- * appropriate, then invokes the Integrator again to continue advancing time until the target time is reached.
+ *
+ * stepTo() invokes the Integrator to advance time.  It detects events which may occur, calls event handlers
+ * as appropriate, then invokes the Integrator again to continue advancing time until the target time is
+ * reached.
  */
 class SimTK_SIMMATH_EXPORT TimeStepper {
-public:
+    public:
     /**
      * Create a TimeStepper to advance a System.
-     * 
+     *
      * This constructor leaves the Integrator unspecified.  You therefore must call setIntegrator()
      * before calling initialize().
      */
@@ -88,7 +90,7 @@ public:
     /**
      * Supply the time stepper with a starting state.  This must be called after the Integrator has
      * been set, and before the first call to stepTo().
-     * 
+     *
      * The specified state is copied into the Integrator's internally maintained "advanced" state;
      * subsequent changes to the State object passed in here will not affect the simulation.
      */
@@ -100,32 +102,35 @@ public:
      */
     const State& getState() const;
     /**
-     * Get the current time of the System being integrated.  This is identical to calling getState().getTime().
+     * Get the current time of the System being integrated.  This is identical to calling
+     * getState().getTime().
      */
-    Real getTime() const {return getState().getTime();}
+    Real getTime() const {
+        return getState().getTime();
+    }
     /**
      * Use the Integrator to advance the System up to the specified time.  This method will repeatedly
      * invoke the Integrator as necessary, handling any events which occur.  The TimeStepper must be
      * initialized by calling initialize() before this method may be called.
-     * 
+     *
      * When this method returns, the System will usually have been advanced all the way to the specified
-     * final time.  There are situations where it may return sooner, however: if setReportAllSignificantStates()
-     * was set to true, and a significant state occurred; if {@link Integrator#setFinalTime setFinalTime()} was invoked on the Integrator,
-     * and the final time was reached; or if an event handler requested that the simulation terminate
-     * immediately.
+     * final time.  There are situations where it may return sooner, however: if
+     * setReportAllSignificantStates() was set to true, and a significant state occurred; if {@link
+     * Integrator#setFinalTime setFinalTime()} was invoked on the Integrator, and the final time was reached;
+     * or if an event handler requested that the simulation terminate immediately.
      */
     Integrator::SuccessfulStepStatus stepTo(Real time);
 
     /*! <!-- Stage info --> */
-    const void PrintStages(void) const {
+    const void PrintStages() const {
         PrintAdvancedStateStages();
         PrintInterpolatedStateStages();
     };
-    
-    const void PrintAdvancedStateStages(void) const;
-    const void PrintInterpolatedStateStages(void) const;
 
-private:
+    const void PrintAdvancedStateStages() const;
+    const void PrintInterpolatedStateStages() const;
+
+    private:
     class TimeStepperRep* rep;
     friend class TimeStepperRep;
 };

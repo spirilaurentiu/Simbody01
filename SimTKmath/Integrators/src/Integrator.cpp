@@ -26,25 +26,27 @@
  * Integrator family of classes.
  */
 
-#include "SimTKcommon.h"
 #include "simmath/Integrator.h"
 
-#include "IntegratorRep.h"
-
 #include <exception>
-#include <limits>
 #include <iostream>
+#include <limits>
 
-using std::cout; using std::endl;
+#include "IntegratorRep.h"
+#include "SimTKcommon.h"
+
+using std::cout;
+using std::endl;
 
 namespace SimTK {
 
-    //////////////////////////////////
-    // IMPLEMENTATION OF INTEGRATOR //
-    //////////////////////////////////
+//////////////////////////////////
+// IMPLEMENTATION OF INTEGRATOR //
+//////////////////////////////////
 
 Integrator::~Integrator() {
-    delete rep; rep=0;
+    delete rep;
+    rep = 0;
 }
 
 void Integrator::resetAllStatistics() {
@@ -57,16 +59,14 @@ void Integrator::initialize(const State& initState) {
 }
 
 void Integrator::reinitialize(Stage g, bool shouldTerminate) {
-    updRep().reinitialize(g,shouldTerminate);
+    updRep().reinitialize(g, shouldTerminate);
 }
 
-Integrator::SuccessfulStepStatus 
-Integrator::stepTo(Real reportTime, Real advanceLimit) {
+Integrator::SuccessfulStepStatus Integrator::stepTo(Real reportTime, Real advanceLimit) {
     return updRep().stepTo(reportTime, advanceLimit);
 }
 
-Integrator::SuccessfulStepStatus 
-Integrator::stepBy(Real interval, Real advanceIntervalLimit) {
+Integrator::SuccessfulStepStatus Integrator::stepBy(Real interval, Real advanceIntervalLimit) {
     const Real t = getRep().getState().getTime();
     return updRep().stepTo(t + interval, t + advanceIntervalLimit);
 }
@@ -79,31 +79,41 @@ Integrator::TerminationReason Integrator::getTerminationReason() const {
     return getRep().getTerminationReason();
 }
 
-/*static*/ String Integrator::
-getSuccessfulStepStatusString(SuccessfulStepStatus stat) {
-    switch(stat) { 
-        case ReachedReportTime: return "ReachedReportTime";
-        case ReachedEventTrigger: return "ReachedEventTrigger";
-        case ReachedScheduledEvent: return "ReachedScheduledEvent";
-        case TimeHasAdvanced: return "TimeHasAdvanced";
-        case ReachedStepLimit: return "ReachedStepLimit";
-        case EndOfSimulation: return "EndOfSimulation";
-        case StartOfContinuousInterval: return "StartOfContinuousInterval";
-        case InvalidSuccessfulStepStatus: return "InvalidSuccessfulStepStatus";
-        default: return String("UNKNOWN SUCCESSFUL STEP STATUS ") 
-                      + String((int)stat);
+/*static*/ String Integrator::getSuccessfulStepStatusString(SuccessfulStepStatus stat) {
+    switch (stat) {
+        case ReachedReportTime:
+            return "ReachedReportTime";
+        case ReachedEventTrigger:
+            return "ReachedEventTrigger";
+        case ReachedScheduledEvent:
+            return "ReachedScheduledEvent";
+        case TimeHasAdvanced:
+            return "TimeHasAdvanced";
+        case ReachedStepLimit:
+            return "ReachedStepLimit";
+        case EndOfSimulation:
+            return "EndOfSimulation";
+        case StartOfContinuousInterval:
+            return "StartOfContinuousInterval";
+        case InvalidSuccessfulStepStatus:
+            return "InvalidSuccessfulStepStatus";
+        default:
+            return String("UNKNOWN SUCCESSFUL STEP STATUS ") + String((int)stat);
     }
 }
 
-/*static*/ String Integrator::
-getTerminationReasonString(TerminationReason reason) {
-    switch(reason) { 
-        case ReachedFinalTime: return "ReachedFinalTime";
-        case AnUnrecoverableErrorOccurred: return "AnUnrecoverableErrorOccurred";
-        case EventHandlerRequestedTermination: return "EventHandlerRequestedTermination";
-        case InvalidTerminationReason: return "InvalidTerminationReason";
-        default: return String("UNKNOWN TERMINATION REASON ") 
-                      + String((int)reason);
+/*static*/ String Integrator::getTerminationReasonString(TerminationReason reason) {
+    switch (reason) {
+        case ReachedFinalTime:
+            return "ReachedFinalTime";
+        case AnUnrecoverableErrorOccurred:
+            return "AnUnrecoverableErrorOccurred";
+        case EventHandlerRequestedTermination:
+            return "EventHandlerRequestedTermination";
+        case InvalidTerminationReason:
+            return "InvalidTerminationReason";
+        default:
+            return String("UNKNOWN TERMINATION REASON ") + String((int)reason);
     }
 }
 
@@ -112,41 +122,42 @@ getTerminationReasonString(TerminationReason reason) {
 
 Vec2 Integrator::getEventWindow() const {
     if (getRep().getStepCommunicationStatus() != IntegratorRep::StepHasBeenReturnedWithEvent) {
-        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered, "getEventWindow",
+        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered,
+                     "getEventWindow",
                      getRep().getState().getTime());
-        //NOTREACHED
+        // NOTREACHED
     }
-    assert(getRep().getEventWindowLow()==getRep().getState().getTime());
-    assert(getRep().getEventWindowHigh()==getRep().getAdvancedTime());
+    assert(getRep().getEventWindowLow() == getRep().getState().getTime());
+    assert(getRep().getEventWindowHigh() == getRep().getAdvancedTime());
     return Vec2(getRep().getEventWindowLow(), getRep().getEventWindowHigh());
 }
 
-const Array_<EventId>& 
-Integrator::getTriggeredEvents() const {
+const Array_<EventId>& Integrator::getTriggeredEvents() const {
     if (getRep().getStepCommunicationStatus() != IntegratorRep::StepHasBeenReturnedWithEvent) {
-        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered, "getTriggeredEvents",
+        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered,
+                     "getTriggeredEvents",
                      getRep().getState().getTime());
-        //NOTREACHED
+        // NOTREACHED
     }
     return getRep().getTriggeredEvents();
 }
 
-const Array_<Real>&
-Integrator::getEstimatedEventTimes() const {
+const Array_<Real>& Integrator::getEstimatedEventTimes() const {
     if (getRep().getStepCommunicationStatus() != IntegratorRep::StepHasBeenReturnedWithEvent) {
-        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered, "getEstimatedEventTimes",
+        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered,
+                     "getEstimatedEventTimes",
                      getRep().getState().getTime());
-        //NOTREACHED
+        // NOTREACHED
     }
     return getRep().getEstimatedEventTimes();
 }
 
-const Array_<Event::Trigger>&
-Integrator::getEventTransitionsSeen() const {
+const Array_<Event::Trigger>& Integrator::getEventTransitionsSeen() const {
     if (getRep().getStepCommunicationStatus() != IntegratorRep::StepHasBeenReturnedWithEvent) {
-        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered, "getEventTransitionsSeen",
+        SimTK_THROW2(CantAskForEventInfoWhenNoEventTriggered,
+                     "getEventTransitionsSeen",
                      getRep().getState().getTime());
-        //NOTREACHED
+        // NOTREACHED
     }
     return getRep().getEventTransitionsSeen();
 }
@@ -201,8 +212,7 @@ int Integrator::getNumUProjections() const {
     return getRep().getNumUProjections();
 }
 int Integrator::getNumProjections() const {
-    return getRep().getNumQProjections()
-         + getRep().getNumUProjections();
+    return getRep().getNumQProjections() + getRep().getNumUProjections();
 }
 int Integrator::getNumErrorTestFailures() const {
     return getRep().getNumErrorTestFailures();
@@ -220,8 +230,7 @@ int Integrator::getNumUProjectionFailures() const {
     return getRep().getNumUProjectionFailures();
 }
 int Integrator::getNumProjectionFailures() const {
-    return getRep().getNumQProjectionFailures()
-         + getRep().getNumUProjectionFailures();
+    return getRep().getNumQProjectionFailures() + getRep().getNumUProjectionFailures();
 }
 int Integrator::getNumConvergentIterations() const {
     return getRep().getNumConvergentIterations();
@@ -244,20 +253,20 @@ void Integrator::setInternalStepLimit(int nSteps) {
 
 void Integrator::setInitialStepSize(Real z) {
     assert(z == -1. || z > 0.);
-    assert(getRep().userMinStepSize==-1. || z >= getRep().userMinStepSize);
-    assert(getRep().userMaxStepSize==-1. || z <= getRep().userMaxStepSize);
+    assert(getRep().userMinStepSize == -1. || z >= getRep().userMinStepSize);
+    assert(getRep().userMaxStepSize == -1. || z <= getRep().userMaxStepSize);
     updRep().userInitStepSize = z;
 }
-void Integrator::setMinimumStepSize(Real z) { 
+void Integrator::setMinimumStepSize(Real z) {
     assert(z == -1. || z > 0.);
-    assert(getRep().userInitStepSize==-1. || z <= getRep().userInitStepSize);
-    assert(getRep().userMaxStepSize ==-1. || z <= getRep().userMaxStepSize);
+    assert(getRep().userInitStepSize == -1. || z <= getRep().userInitStepSize);
+    assert(getRep().userMaxStepSize == -1. || z <= getRep().userMaxStepSize);
     updRep().userMinStepSize = z;
 }
 void Integrator::setMaximumStepSize(Real z) {
     assert(z == -1. || z > 0.);
-    assert(getRep().userInitStepSize==-1. || z >= getRep().userInitStepSize);
-    assert(getRep().userMinStepSize ==-1. || z >= getRep().userMinStepSize);
+    assert(getRep().userInitStepSize == -1. || z >= getRep().userInitStepSize);
+    assert(getRep().userMinStepSize == -1. || z >= getRep().userMinStepSize);
     updRep().userMaxStepSize = z;
 }
 void Integrator::setFixedStepSize(Real stepSize) {
@@ -271,13 +280,14 @@ void Integrator::setAccuracy(Real accuracy) {
 }
 void Integrator::setConstraintTolerance(Real consTol) {
     assert(consTol == -1. || (0. < consTol && consTol <= 1.));
-    updRep().userConsTol=consTol;
+    updRep().userConsTol = consTol;
 }
 void Integrator::setUseInfinityNorm(bool useInfinityNorm) {
     updRep().userUseInfinityNorm = useInfinityNorm ? 1 : 0;
 }
-bool Integrator::isInfinityNormInUse() const
-{   return getRep().userUseInfinityNorm == 1; }
+bool Integrator::isInfinityNormInUse() const {
+    return getRep().userUseInfinityNorm == 1;
+}
 
 void Integrator::setForceFullNewton(bool forceFullNewton) {
     updRep().userForceFullNewton = forceFullNewton ? 1 : 0;
@@ -312,25 +322,23 @@ int Integrator::getMethodMaxOrder() const {
 }
 
 /*! <!-- Stage info --> */
-const void Integrator::PrintAdvancedStateStages(void) const {
+const void Integrator::PrintAdvancedStateStages() const {
     getRep().PrintAdvancedStateStages();
 }
 
 /*! <!-- Stage info --> */
-const void Integrator::PrintInterpolatedStateStages(void) const {
+const void Integrator::PrintInterpolatedStateStages() const {
     getRep().PrintInterpolatedStateStages();
 }
 
 
-    //////////////////////////////////////
-    // IMPLEMENTATION OF INTEGRATOR REP //
-    //////////////////////////////////////
+//////////////////////////////////////
+// IMPLEMENTATION OF INTEGRATOR REP //
+//////////////////////////////////////
 
-IntegratorRep::IntegratorRep
-       (Integrator*               handle,
-        const System&             system)
-  : myHandle(handle), sys(system)
-{
+IntegratorRep::IntegratorRep(Integrator* handle, const System& system)
+    : myHandle(handle)
+    , sys(system) {
     invalidateIntegratorInternalState();
     initializeUserStuff();
     resetIntegratorStatistics();
@@ -342,108 +350,109 @@ IntegratorRep::IntegratorRep
 //------------------------------------------------------------------------------
 
 void IntegratorRep::initialize(const State& initState) {
-  try
-  { invalidateIntegratorInternalState();
+    try {
+        invalidateIntegratorInternalState();
 
-    // Copy the supplied initial state into the integrator.
-    updAdvancedState() = initState;
+        // Copy the supplied initial state into the integrator.
+        updAdvancedState() = initState;
 
-    // Freeze the number and kinds of state variables.
-    getSystem().realizeModel(updAdvancedState());
-     
-    // Freeze problem dimensions; at this point the state represents an
-    // instance of a physically realizable system.
-    getSystem().realize(getAdvancedState(), Stage::Instance);
-    
-    // Some Systems need to get control whenever time is advanced
-    // successfully (and irreversibly) so that they can do discrete updates.
-    systemHasTimeAdvancedEvents = getSystem().hasTimeAdvancedEvents();
+        // Freeze the number and kinds of state variables.
+        getSystem().realizeModel(updAdvancedState());
 
-    // Allocate integrator-local data structures now that we know the sizes.
-    const int ny = getAdvancedState().getNY();
-    const int nc = getAdvancedState().getNYErr();
-    const int ne = getAdvancedState().getNEventTriggers();
-    timeScaleInUse = getSystem().getDefaultTimeScale();
+        // Freeze problem dimensions; at this point the state represents an
+        // instance of a physically realizable system.
+        getSystem().realize(getAdvancedState(), Stage::Instance);
 
-    // Set accuracy and consTol to their user-requested values or
-    // to the appropriate defaults.
-    setAccuracyAndTolerancesFromUserRequests();
+        // Some Systems need to get control whenever time is advanced
+        // successfully (and irreversibly) so that they can do discrete updates.
+        systemHasTimeAdvancedEvents = getSystem().hasTimeAdvancedEvents();
 
-    // Now we can ask the System for information about its event triggers.
-    // (Event trigger info is Instance stage information.) Note that the event
-    // localization windows here are expressed in terms of the system timescale
-    // -- be sure to multiply by timescale before using.
-    getSystem().calcEventTriggerInfo(getAdvancedState(), eventTriggerInfo);
+        // Allocate integrator-local data structures now that we know the sizes.
+        const int ny = getAdvancedState().getNY();
+        const int nc = getAdvancedState().getNYErr();
+        const int ne = getAdvancedState().getNEventTriggers();
+        timeScaleInUse = getSystem().getDefaultTimeScale();
 
-    // Realize Time stage, apply prescribed motions, and attempt to project q's 
-    // and u's onto the
-    // position and velocity constraint manifolds to drive constraint errors
-    // below accuracy*unitTolerance for each constraint. We'll allow project()
-    // to throw an exception if it fails since we can't recover from here.
-    // However, we won't set the LocalOnly option which means project() is
-    // allowed to thrash around wildly to attempt to find *some* solution.
-    // Also force repeated updates of iteration matrix to maximize chances of 
-    // finding a solution; we're not in a hurry here.
-    realizeAndProjectKinematicsWithThrow(updAdvancedState(),
-        ProjectOptions::ForceProjection, ProjectOptions::ForceFullNewton);
+        // Set accuracy and consTol to their user-requested values or
+        // to the appropriate defaults.
+        setAccuracyAndTolerancesFromUserRequests();
 
-    // Inform any state-using System elements (especially Measures) that we 
-    // are starting a simulation and give them a chance to initialize their own
-    // continuous (z) variables and discrete variables.
+        // Now we can ask the System for information about its event triggers.
+        // (Event trigger info is Instance stage information.) Note that the event
+        // localization windows here are expressed in terms of the system timescale
+        // -- be sure to multiply by timescale before using.
+        getSystem().calcEventTriggerInfo(getAdvancedState(), eventTriggerInfo);
 
-    // Handler is allowed to throw an exception if it fails since we don't
-    // have a way to recover.
-    HandleEventsOptions handleOpts(getConstraintToleranceInUse());
-    HandleEventsResults results;
-    getSystem().handleEvents(updAdvancedState(),
-                             Event::Cause::Initialization,
-                             Array_<EventId>(),
-                             handleOpts, results);
-    SimTK_ERRCHK_ALWAYS(
-        results.getExitStatus()!=HandleEventsResults::ShouldTerminate,
-        "Integrator::initialize()", 
-        "An initialization event handler requested termination.");
+        // Realize Time stage, apply prescribed motions, and attempt to project q's
+        // and u's onto the
+        // position and velocity constraint manifolds to drive constraint errors
+        // below accuracy*unitTolerance for each constraint. We'll allow project()
+        // to throw an exception if it fails since we can't recover from here.
+        // However, we won't set the LocalOnly option which means project() is
+        // allowed to thrash around wildly to attempt to find *some* solution.
+        // Also force repeated updates of iteration matrix to maximize chances of
+        // finding a solution; we're not in a hurry here.
+        realizeAndProjectKinematicsWithThrow(updAdvancedState(),
+                                             ProjectOptions::ForceProjection,
+                                             ProjectOptions::ForceFullNewton);
 
-    // Now evaluate the state through the Acceleration stage to calculate
-    // the initial state derivatives.
-    realizeStateDerivatives(getAdvancedState());
+        // Inform any state-using System elements (especially Measures) that we
+        // are starting a simulation and give them a chance to initialize their own
+        // continuous (z) variables and discrete variables.
 
-    // Now that we have valid update values for auto-update discrete variables,
-    // use them to reinitialize the discrete state variables. This one time
-    // only, the value swapped in from the discrete variable here is not yet
-    // suitable for use as an update value, during time integration since it
-    // has never been realized to Instance stage. So we'll force a 
-    // re-evaluation.
-    updAdvancedState().autoUpdateDiscreteVariables();
-    getAdvancedState().invalidateAllCacheAtOrAbove(Stage::Instance);
+        // Handler is allowed to throw an exception if it fails since we don't
+        // have a way to recover.
+        HandleEventsOptions handleOpts(getConstraintToleranceInUse());
+        HandleEventsResults results;
+        getSystem().handleEvents(updAdvancedState(),
+                                 Event::Cause::Initialization,
+                                 Array_<EventId>(),
+                                 handleOpts,
+                                 results);
+        SimTK_ERRCHK_ALWAYS(results.getExitStatus() != HandleEventsResults::ShouldTerminate,
+                            "Integrator::initialize()",
+                            "An initialization event handler requested termination.");
 
-    // Re-realize to fill in the swapped-in update values.
-    realizeStateDerivatives(getAdvancedState());
+        // Now evaluate the state through the Acceleration stage to calculate
+        // the initial state derivatives.
+        realizeStateDerivatives(getAdvancedState());
 
-    // Record the continuous parts of this now-realized initial state as the 
-    // previous state as well (previous state is used when we have to back up
-    // from a failed step attempt).
-    saveStateAndDerivsAsPrevious(getAdvancedState());
+        // Now that we have valid update values for auto-update discrete variables,
+        // use them to reinitialize the discrete state variables. This one time
+        // only, the value swapped in from the discrete variable here is not yet
+        // suitable for use as an update value, during time integration since it
+        // has never been realized to Instance stage. So we'll force a
+        // re-evaluation.
+        updAdvancedState().autoUpdateDiscreteVariables();
+        getAdvancedState().invalidateAllCacheAtOrAbove(Stage::Instance);
 
-    // The initial state is set so it looks like we just *completed* a step to 
-    // get here. That way if the first reportTime is zero, this will get 
-    // reported.
-    setStepCommunicationStatus(CompletedInternalStepNoEvent);
-    startOfContinuousInterval = true;
+        // Re-realize to fill in the swapped-in update values.
+        realizeStateDerivatives(getAdvancedState());
 
-    // This will be set to something meaningful when the simulation ends.
-    terminationReason = Integrator::InvalidTerminationReason;
+        // Record the continuous parts of this now-realized initial state as the
+        // previous state as well (previous state is used when we have to back up
+        // from a failed step attempt).
+        saveStateAndDerivsAsPrevious(getAdvancedState());
 
-    // Call this virtual method in case the concrete integrator class has 
-    // additional initialization needs. Note that it gets the State as we have
-    // adjusted it, NOT the one originally passed to initialize().
-    methodInitialize(getAdvancedState());
+        // The initial state is set so it looks like we just *completed* a step to
+        // get here. That way if the first reportTime is zero, this will get
+        // reported.
+        setStepCommunicationStatus(CompletedInternalStepNoEvent);
+        startOfContinuousInterval = true;
 
-  } catch (const std::exception& e) {
-    SimTK_THROW1(Integrator::InitializationFailed, e.what());
-  } /* catch (...) {
-    SimTK_THROW1(Integrator::InitializationFailed, "UNKNOWN EXCEPTION");
-  } */
+        // This will be set to something meaningful when the simulation ends.
+        terminationReason = Integrator::InvalidTerminationReason;
+
+        // Call this virtual method in case the concrete integrator class has
+        // additional initialization needs. Note that it gets the State as we have
+        // adjusted it, NOT the one originally passed to initialize().
+        methodInitialize(getAdvancedState());
+
+    } catch (const std::exception& e) {
+        SimTK_THROW1(Integrator::InitializationFailed, e.what());
+    } /* catch (...) {
+      SimTK_THROW1(Integrator::InitializationFailed, "UNKNOWN EXCEPTION");
+    } */
 }
 
 void IntegratorRep::reinitialize(Stage stage, bool shouldTerminate) {
@@ -455,9 +464,7 @@ void IntegratorRep::reinitialize(Stage stage, bool shouldTerminate) {
         setStepCommunicationStatus(FinalTimeHasBeenReturned);
         terminationReason = Integrator::EventHandlerRequestedTermination;
     }
-    methodReinitialize(stage,shouldTerminate);
+    methodReinitialize(stage, shouldTerminate);
 }
 
 } // namespace SimTK
-
-

@@ -40,49 +40,57 @@ u are the time derivatives of the generalized coordinates so qdot=u for this
 mobilizer.
 **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Cylinder : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Cylinder. **/
-    Cylinder() {}
+    Cylinder() {
+    }
 
-    /** Create a %Cylinder mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Cylinder mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Cylinder(MobilizedBody& parent, const Transform& X_PF,
-             const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    Cylinder(MobilizedBody& parent,
+             const Transform& X_PF,
+             const Body& bodyInfo,
+             const Transform& X_BM,
+             Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Cylinder(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Cylinder(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     // Needed in GMOL - CYL
-    const Vec2& getDefaultQ() const ;
-    MobilizedBody::Cylinder& setDefaultQ(const Vec2& q) ;
+    const Vec2& getDefaultQ() const;
+    MobilizedBody::Cylinder& setDefaultQ(const Vec2& q);
     // GMOL - CYL
 
     Cylinder& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Cylinder& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Cylinder& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Cylinder& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Cylinder& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Cylinder& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Cylinder& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     /** @cond **/ // Don't let doxygen see this
-    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Cylinder, CylinderImpl, 
-                                             MobilizedBody);
+    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(Cylinder, CylinderImpl, MobilizedBody);
     /** @endcond **/
 };
 
@@ -90,6 +98,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_CYLINDER_H_
-
-
-

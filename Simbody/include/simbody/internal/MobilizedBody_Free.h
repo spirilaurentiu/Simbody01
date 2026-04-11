@@ -31,58 +31,67 @@ Declares the MobilizedBody::Free class. **/
 
 namespace SimTK {
 
-/** Unrestricted motion for a rigid body (six mobilities). 
+/** Unrestricted motion for a rigid body (six mobilities).
 
 Orientation is modeled the same as for the Ball mobilizer, that is, using
-quaternions to avoid singularities. A modeling option exists to 
+quaternions to avoid singularities. A modeling option exists to
 have the joint modeled with an x-y-z body fixed Euler sequence like
 a Gimbal or Bushing mobilizer. Translational generalized coordinates are
 x,y,z translations along the F (inboard) axes. There are six generalized speeds
-u for this mobilizer. The first three are always the three measure numbers of 
-the angular velocity vector w_FM, the relative angular velocity of the outboard 
+u for this mobilizer. The first three are always the three measure numbers of
+the angular velocity vector w_FM, the relative angular velocity of the outboard
 M frame in the inboard F frame, expressed in the F frame. The second three
 are the measure numbers of v_FM, the relative linear velocity of the M frame's
-origin Mo in the F frame, expressed in the F frame. The meaning of the 
+origin Mo in the F frame, expressed in the F frame. The meaning of the
 generalized speeds is unchanged by setting the "use Euler
-angles" modeling option, so the rotational generalized speeds here differ from 
+angles" modeling option, so the rotational generalized speeds here differ from
 those of a Bushing joint, and qdot != u for this mobilizer.
 
 @see MobilizedBody::Bushing for an alternative.
 **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::Free : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::Free. **/
-    Free() {}
+    Free() {
+    }
 
-    /** Create a %Free mobilizer between an existing parent (inboard) body P 
-    and a new child (outboard) body B created by copying the given \a bodyInfo 
-    into a privately-owned Body within the constructed %MobilizedBody object. 
-    Specify the mobilizer frames F fixed to parent P and M fixed to child B. 
+    /** Create a %Free mobilizer between an existing parent (inboard) body P
+    and a new child (outboard) body B created by copying the given \a bodyInfo
+    into a privately-owned Body within the constructed %MobilizedBody object.
+    Specify the mobilizer frames F fixed to parent P and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    Free(MobilizedBody& parent, const Transform& X_PF,
-         const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    Free(MobilizedBody& parent,
+         const Transform& X_PF,
+         const Body& bodyInfo,
+         const Transform& X_BM,
+         Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    Free(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    Free(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     Free& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    Free& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    Free& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    Free& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    Free& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     Free& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     Free& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     // Leaves rotation unchanged.
@@ -96,7 +105,7 @@ public:
     // Leaves translation unchanged. The Rotation matrix will be converted to
     // a quaternion for storage.
     Free& setDefaultRotation(const Rotation&);
-    // Sets both translation and rotation. The Rotation part of the Transform 
+    // Sets both translation and rotation. The Rotation part of the Transform
     // will be converted to a quaternion for storage.
     Free& setDefaultTransform(const Transform&);
 
@@ -137,7 +146,7 @@ public:
 
     const Vec7& getMyPartQ(const State&, const Vector& qlike) const;
     const Vec6& getMyPartU(const State&, const Vector& ulike) const;
-   
+
     Vec7& updMyPartQ(const State&, Vector& qlike) const;
     Vec6& updMyPartU(const State&, Vector& ulike) const;
 
@@ -149,6 +158,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_FREE_H_
-
-
-

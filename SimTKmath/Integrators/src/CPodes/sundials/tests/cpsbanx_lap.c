@@ -50,7 +50,7 @@ static int Jac(int N, int mu, int ml,
  *-------------------------------
  */
 
-int main(void)
+int main()
 {
   realtype dx, dy, reltol, abstol, t, tout, umax;
   N_Vector u, up;

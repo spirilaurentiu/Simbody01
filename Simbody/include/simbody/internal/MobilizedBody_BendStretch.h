@@ -31,7 +31,7 @@ Declares the MobilizedBody::BendStretch class. **/
 
 namespace SimTK {
 
-/** Two mobilities: The z axis of the parent's F frame is 
+/** Two mobilities: The z axis of the parent's F frame is
 used for rotation (and that is always aligned with the M frame z axis).
 The x axis of the *M* (outboard) frame is then used for translation;
 that is, first we rotate around z, which moves M's x with respect to F's x. Then
@@ -40,50 +40,58 @@ rotation and the translation, in that order.
 This can also be viewed a a 2D polar coordinate mobilizer since the coordinates
 are (theta, r) about perpendicular axes. **/
 class SimTK_SIMBODY_EXPORT MobilizedBody::BendStretch : public MobilizedBody {
-public:
+    public:
     /** Default constructor provides an empty handle that can be assigned to
     reference any %MobilizedBody::BendStretch. **/
-    BendStretch() {}
+    BendStretch() {
+    }
 
     /** Create a %BendStretch mobilizer between an existing parent (inboard)
-    body P and a new child (outboard) body B created by copying the given 
-    \a bodyInfo into a privately-owned Body within the constructed 
-    %MobilizedBody object. Specify the mobilizer frames F fixed to parent P 
-    and M fixed to child B. 
+    body P and a new child (outboard) body B created by copying the given
+    \a bodyInfo into a privately-owned Body within the constructed
+    %MobilizedBody object. Specify the mobilizer frames F fixed to parent P
+    and M fixed to child B.
     @see MobilizedBody for a diagram and explanation of terminology. **/
-    BendStretch(MobilizedBody& parent, const Transform& X_PF,
-                const Body& bodyInfo,  const Transform& X_BM, Direction=Forward);
+    BendStretch(MobilizedBody& parent,
+                const Transform& X_PF,
+                const Body& bodyInfo,
+                const Transform& X_BM,
+                Direction = Forward);
 
-    /** Abbreviated constructor you can use if the mobilizer frames are 
+    /** Abbreviated constructor you can use if the mobilizer frames are
     coincident with the parent and child body frames. **/
-    BendStretch(MobilizedBody& parent, const Body& bodyInfo, Direction=Forward);
+    BendStretch(MobilizedBody& parent, const Body& bodyInfo, Direction = Forward);
 
     BendStretch& addBodyDecoration(const Transform& X_BD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addBodyDecoration(X_BD,g); return *this;
+        MobilizedBody::addBodyDecoration(X_BD, g);
+        return *this;
     }
-    BendStretch& addOutboardDecoration(const Transform& X_MD,  const DecorativeGeometry& g) {
-        (void)MobilizedBody::addOutboardDecoration(X_MD,g); return *this;
+    BendStretch& addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
+        MobilizedBody::addOutboardDecoration(X_MD, g);
+        return *this;
     }
-    BendStretch& addInboardDecoration (const Transform& X_FD, const DecorativeGeometry& g) {
-        (void)MobilizedBody::addInboardDecoration(X_FD,g); return *this;
+    BendStretch& addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
+        MobilizedBody::addInboardDecoration(X_FD, g);
+        return *this;
     }
 
     BendStretch& setDefaultInboardFrame(const Transform& X_PF) {
-        (void)MobilizedBody::setDefaultInboardFrame(X_PF); return *this;
+        MobilizedBody::setDefaultInboardFrame(X_PF);
+        return *this;
     }
 
     BendStretch& setDefaultOutboardFrame(const Transform& X_BM) {
-        (void)MobilizedBody::setDefaultOutboardFrame(X_BM); return *this;
+        MobilizedBody::setDefaultOutboardFrame(X_BM);
+        return *this;
     }
 
     // Needed in GMOL
-    const Vec2& getDefaultQ() const ;
-    MobilizedBody::BendStretch& setDefaultQ(const Vec2& q) ;
+    const Vec2& getDefaultQ() const;
+    MobilizedBody::BendStretch& setDefaultQ(const Vec2& q);
     // GMOL
 
     /** @cond **/ // Don't let doxygen see this
-    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(BendStretch, BendStretchImpl, 
-                                             MobilizedBody);
+    SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(BendStretch, BendStretchImpl, MobilizedBody);
     /** @endcond **/
 };
 
@@ -91,6 +99,3 @@ public:
 } // namespace SimTK
 
 #endif // SimTK_SIMBODY_MOBILIZED_BODY_BENDSTRETCH_H_
-
-
-
