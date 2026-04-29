@@ -29,11 +29,17 @@
 namespace SimTK {
 
 class VerletIntegratorRep : public AbstractIntegratorRep {
-public:
+    public:
     VerletIntegratorRep(Integrator* handle, const System& sys);
-protected:
-    bool attemptDAEStep
-       (Real t1, Vector& yErrEst, int& errOrder, int& numIterations) override;
+
+    protected:
+    auto attemptDAEStep(Real t1, Vector& yErrEst, int& errOrder, int& numIterations) -> bool override;
+
+    private:
+    Vector u1_est;
+    Vector z1_est;
+    Vector usave;
+    Vector zsave;
 };
 
 } // namespace SimTK

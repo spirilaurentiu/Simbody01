@@ -5566,10 +5566,7 @@ void SimbodyMatterSubsystemRep::calcDetM(const State& s, const Vector& f, Vector
     for (int i = 0; i < (int)rbNodeLevels.size(); i++) {
         for (int j = 0; j < (int)rbNodeLevels[i].size(); j++) {
             const RigidBodyNode& node = *rbNodeLevels[i][j];
-            std::cout << "calcDetM node[" << i << "][" << j << "] START " << std::endl;
             node.calcDetMPass2Outward(ic, tpc, abc, eps.cbegin(), A_GB.begin(), MInvfPtr, detM);
-            std::cout << "calcDetM node[" << i << "][" << j << "]";
-            std::cout << " detM " << *detM << " END" << std::endl;
         }
     }
 }

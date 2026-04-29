@@ -21,34 +21,38 @@
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
 
-#include "SimTKsimbody.h"
+#include <map>
+#include <vector>
+
 #include "SimTKcommon/Testing.h"
 
-#include <vector>
-#include <map>
+#include "SimTKsimbody.h"
 
 using namespace SimTK;
 using namespace std;
 
 const Real TOL = 1e-10;
 
-#define ASSERT(cond) {SimTK_ASSERT_ALWAYS(cond, "Assertion failed");}
+#define ASSERT(cond)                                   \
+    {                                                  \
+        SimTK_ASSERT_ALWAYS(cond, "Assertion failed"); \
+    }
 
 template <class T>
 void assertEqual(T val1, T val2) {
-    ASSERT(abs(val1-val2) < TOL);
+    ASSERT(abs(val1 - val2) < TOL);
 }
 
 template <int N>
 void assertEqual(Vec<N> val1, Vec<N> val2) {
-    for (int i = 0; i < N; ++i)
-        ASSERT(abs(val1[i]-val2[i]) < TOL);
+    for (int i = 0; i < N; ++i) {
+        ASSERT(abs(val1[i] - val2[i]) < TOL);
+    }
 }
 
+// Create a system of pairs of identical bodies, where half will be implemented with RBNodeLoneParticle
+// and half with RBNodeTranslate.
 static void compareToTranslate(bool prescribe, Motion::Level level) {
-    // Create a system of pairs of identical bodies, where half will be implemented with RBNodeLoneParticle
-    // and half with RBNodeTranslate.
-    
     MultibodySystem system;
     SimbodyMatterSubsystem matter(system);
     GeneralForceSubsystem force(system);
@@ -70,23 +74,23 @@ static void compareToTranslate(bool prescribe, Motion::Level level) {
             Motion::Sinusoid(body2, level, 1.5, 1.1, phase);
         }
     }
-    
+
     // Initialize the state.
-    
+
     State state = system.realizeTopology();
     for (int i = 0; i < numBodies; i++) {
         Vec3 pos(random.getValue(), random.getValue(), random.getValue());
         Vec3 vel(random.getValue(), random.getValue(), random.getValue());
-        const MobilizedBody& body1 = matter.getMobilizedBody(MobilizedBodyIndex(2*i+1));
-        const MobilizedBody& body2 = matter.getMobilizedBody(MobilizedBodyIndex(2*i+2));
+        const MobilizedBody& body1 = matter.getMobilizedBody(MobilizedBodyIndex(2 * i + 1));
+        const MobilizedBody& body2 = matter.getMobilizedBody(MobilizedBodyIndex(2 * i + 2));
         body1.setQToFitTranslation(state, pos);
         body2.setQToFitTranslation(state, pos);
         body1.setUToFitLinearVelocity(state, vel);
         body2.setUToFitLinearVelocity(state, vel);
     }
-    
+
     // Calculate lots of quantities from the MobilizedBodies.
-    
+
     system.realize(state, Stage::Acceleration);
     Vector_<SpatialVec> reactionForces;
     matter.calcMobilizerReactionForces(state, reactionForces);
@@ -95,8 +99,8 @@ static void compareToTranslate(bool prescribe, Motion::Level level) {
 
     // Both methods should produce the same results.
     SimTK_TEST_EQ(reactionForces, reactionForcesFreebody);
-    
-    
+
+
     Vector mv, minvv;
     matter.multiplyByM(state, state.getU(), mv);
     matter.multiplyByMInv(state, state.getU(), minvv);
@@ -104,26 +108,30 @@ static void compareToTranslate(bool prescribe, Motion::Level level) {
     Vector_<SpatialVec> appliedBodyForces(matter.getNumBodies());
     for (int i = 0; i < numBodies; i++) {
         Vec3 mobilityForce;
-        random.fillArray((Real*) &mobilityForce, 3);
-        Vec3::updAs(&appliedMobilityForces[6*i]) = mobilityForce;
-        Vec3::updAs(&appliedMobilityForces[6*i+3]) = mobilityForce;
+        random.fillArray((Real*)&mobilityForce, 3);
+        Vec3::updAs(&appliedMobilityForces[6 * i]) = mobilityForce;
+        Vec3::updAs(&appliedMobilityForces[6 * i + 3]) = mobilityForce;
         SpatialVec bodyForce;
-        random.fillArray((Real*) &bodyForce, 6);
-        appliedBodyForces[2*i+1] = bodyForce;
-        appliedBodyForces[2*i+2] = bodyForce;
+        random.fillArray((Real*)&bodyForce, 6);
+        appliedBodyForces[2 * i + 1] = bodyForce;
+        appliedBodyForces[2 * i + 2] = bodyForce;
     }
     Vector knownUdot, residualMobilityForces;
-    matter.calcResidualForceIgnoringConstraints(state, appliedMobilityForces, appliedBodyForces, knownUdot, residualMobilityForces);
+    matter.calcResidualForceIgnoringConstraints(state,
+                                                appliedMobilityForces,
+                                                appliedBodyForces,
+                                                knownUdot,
+                                                residualMobilityForces);
     Vector dEdQ;
     matter.multiplyBySystemJacobianTranspose(state, appliedBodyForces, dEdQ);
-    Array_<SpatialInertia,MobilizedBodyIndex> compositeInertias;
+    Array_<SpatialInertia, MobilizedBodyIndex> compositeInertias;
     matter.calcCompositeBodyInertias(state, compositeInertias);
-    
+
     // See whether the RBNodeLoneParticles and the RBNodeTranslates produced identical results.
-    
+
     for (int i = 0; i < numBodies; i++) {
-        MobilizedBodyIndex index1(2*i+1);
-        MobilizedBodyIndex index2(2*i+2);
+        MobilizedBodyIndex index1(2 * i + 1);
+        MobilizedBodyIndex index2(2 * i + 2);
         const MobilizedBody& body1 = matter.getMobilizedBody(index1);
         const MobilizedBody& body2 = matter.getMobilizedBody(index2);
         assertEqual(body1.getBodyOriginLocation(state), body2.getBodyOriginLocation(state));
@@ -131,15 +139,19 @@ static void compareToTranslate(bool prescribe, Motion::Level level) {
         assertEqual(body1.getBodyOriginAcceleration(state), body2.getBodyOriginAcceleration(state));
         assertEqual(reactionForces[index1][0], reactionForces[index2][0]);
         assertEqual(reactionForces[index1][1], reactionForces[index2][1]);
-        assertEqual(Vec3::getAs(&mv[6*i]), Vec3::getAs(&mv[6*i+3]));
-        if (!prescribe)
-            assertEqual(Vec3::getAs(&minvv[6*i]), Vec3::getAs(&minvv[6*i+3]));
-        assertEqual(Vec3::getAs(&residualMobilityForces[6*i]), Vec3::getAs(&residualMobilityForces[6*i+3]));
-        assertEqual(Vec3::getAs(&dEdQ[6*i]), Vec3::getAs(&dEdQ[6*i+3]));
+        assertEqual(Vec3::getAs(&mv[6 * i]), Vec3::getAs(&mv[6 * i + 3]));
+        if (!prescribe) {
+            assertEqual(Vec3::getAs(&minvv[6 * i]), Vec3::getAs(&minvv[6 * i + 3]));
+        }
+        assertEqual(Vec3::getAs(&residualMobilityForces[6 * i]),
+                    Vec3::getAs(&residualMobilityForces[6 * i + 3]));
+        assertEqual(Vec3::getAs(&dEdQ[6 * i]), Vec3::getAs(&dEdQ[6 * i + 3]));
         assertEqual(compositeInertias[index1].getMass(), compositeInertias[index2].getMass());
         assertEqual(compositeInertias[index1].getMassCenter(), compositeInertias[index2].getMassCenter());
-        assertEqual(compositeInertias[index1].getUnitInertia().getMoments(), compositeInertias[index2].getUnitInertia().getMoments());
-        assertEqual(compositeInertias[index1].getUnitInertia().getProducts(), compositeInertias[index2].getUnitInertia().getProducts());
+        assertEqual(compositeInertias[index1].getUnitInertia().getMoments(),
+                    compositeInertias[index2].getUnitInertia().getMoments());
+        assertEqual(compositeInertias[index1].getUnitInertia().getProducts(),
+                    compositeInertias[index2].getUnitInertia().getProducts());
     }
 }
 
@@ -161,9 +173,9 @@ static void testPrescribeAcceleration() {
 
 int main() {
     SimTK_START_TEST("TestLoneParticle");
-        SimTK_SUBTEST(testFree);
-        SimTK_SUBTEST(testPrescribePosition);
-        SimTK_SUBTEST(testPrescribeVelocity);
-        SimTK_SUBTEST(testPrescribeAcceleration);
+    SimTK_SUBTEST(testFree);
+    SimTK_SUBTEST(testPrescribePosition);
+    SimTK_SUBTEST(testPrescribeVelocity);
+    SimTK_SUBTEST(testPrescribeAcceleration);
     SimTK_END_TEST();
 }
