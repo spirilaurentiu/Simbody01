@@ -24,30 +24,29 @@
  * limitations under the License.                                             *
  * -------------------------------------------------------------------------- */
 
-#include "SimTKcommon.h"
+#include <map>
+#include <set>
+#include <utility> // std::pair
 
-#include "simbody/internal/common.h"
+#include "simbody/internal/MobilizedBody.h"
+#include "simbody/internal/MobilizedBody_Ground.h"
 #include "simbody/internal/MultibodySystem.h"
 #include "simbody/internal/SimbodyMatterSubsystem.h"
 #include "simbody/internal/SimbodyMatterSubtree.h"
-#include "simbody/internal/MobilizedBody.h"
-#include "simbody/internal/MobilizedBody_Ground.h"
+#include "simbody/internal/common.h"
 
-#include "SimbodyTreeState.h"
 #include "RigidBodyNode.h"
-
-#include <set>
-#include <map>
-#include <utility> // std::pair
+#include "SimTKcommon.h"
+#include "SimbodyTreeState.h"
 using std::pair;
 
-
+#include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <vector>
 #include <map>
 #include <set>
-#include <algorithm>
+#include <variant>
+#include <vector>
 
 class RigidBodyNode;
 class RBDistanceConstraint;
@@ -56,8 +55,10 @@ class RBDirection;
 
 using namespace SimTK;
 
-typedef Array_<const RigidBodyNode*>   RBNodePtrList;
-typedef Vector_<SpatialVec>            SpatialVecList;
+using RBNodePtrList = Array_<const RigidBodyNode*>;
+using SpatialVecList = Vector_<SpatialVec>;
+
+// using NodeVariant = std::variant<RBNodeLoneParticle, RBNodeWeld>;
 
 /*
  * A CoupledConstraintSet is a set of Simbody Constraints which must be
@@ -65,13 +66,13 @@ typedef Vector_<SpatialVec>            SpatialVecList;
  * Subtree here which encompasses all the included Constraints. This
  * Subtree has as its terminal bodies the set of all constrained bodies
  * from any of the included Constraints. The ancestor body will be
- * the outmost common ancestor of all those constrained bodies, or 
+ * the outmost common ancestor of all those constrained bodies, or
  * equivalently the outmost common ancestor of all the Constraints'
  * ancestor bodies.
  *
  * Operators and responses here set up an environment in which the
  * individual constraint error functions are evaluated. The environments
- * are: 
+ * are:
  *   - same as global System state (i.e., this is just a response)
  *   - all mobility variables from State, except for one which is perturbed (q,u,udot)
  *   - all mobility variables are zero (u,udot)
@@ -79,24 +80,28 @@ typedef Vector_<SpatialVec>            SpatialVecList;
  */
 
 class CoupledConstraintSet {
-public:
-    CoupledConstraintSet() : topologyRealized(false) { }
+    public:
+    CoupledConstraintSet()
+        : topologyRealized(false) {
+    }
     void addConstraint(ConstraintIndex cid) {
         topologyRealized = false;
         constraints.insert(cid);
     }
-    
+
     void mergeInConstraintSet(const CoupledConstraintSet& src) {
         topologyRealized = false;
-        for (int i=0; i < (int)src.getCoupledConstraints().size(); ++i)
+        for (int i = 0; i < (int)src.getCoupledConstraints().size(); ++i) {
             constraints.insert(src.getCoupledConstraints()[i]);
+        }
     }
 
     void realizeTopology(const SimbodyMatterSubsystem& matter) {
         coupledConstraints.resize((unsigned)constraints.size());
         std::set<ConstraintIndex>::const_iterator i = constraints.begin();
-        for (int nxt=0; i != constraints.end(); ++i, ++nxt)
+        for (int nxt = 0; i != constraints.end(); ++i, ++nxt) {
             coupledConstraints[nxt] = *i;
+        }
         topologyRealized = true;
     }
 
@@ -105,7 +110,7 @@ public:
         return coupledConstraints;
     }
 
-private:
+    private:
     // TOPOLOGY STATE
     std::set<ConstraintIndex> constraints;
 
@@ -113,17 +118,17 @@ private:
     bool topologyRealized;
 
     // Sorted in nondecreasing order of ancestor MobilizedBodyIndex.
-    Array_<ConstraintIndex>    coupledConstraints;
+    Array_<ConstraintIndex> coupledConstraints;
     SimbodyMatterSubtree coupledSubtree; // with the new ancestor
 };
 
-    //////////////////////////////////
-    // SIMBODY MATTER SUBSYSTEM REP //
-    //////////////////////////////////
+//////////////////////////////////
+// SIMBODY MATTER SUBSYSTEM REP //
+//////////////////////////////////
 
 /*
  * The SimbodyMatterSubsystemRep class owns the tree of MobilizedBodies and their
- * associated computational form inherited from IVM, called RigidBodyNodes. 
+ * associated computational form inherited from IVM, called RigidBodyNodes.
  * Here we store references to the RigidBodyNodes in a tree structure organized
  * in "levels" with level 0 being Ground, level 1
  * being bodies which are connected to Ground (base bodies), level 2 connected to
@@ -139,10 +144,9 @@ private:
  * working at the "Rep" level here.
  */
 class SimbodyMatterSubsystemRep : public SimTK::Subsystem::Guts {
-public:
-    SimbodyMatterSubsystemRep() 
-      : Subsystem::Guts("SimbodyMatterSubsystem", "0.7.1")
-    { 
+    public:
+    SimbodyMatterSubsystemRep()
+        : Subsystem::Guts("SimbodyMatterSubsystem", "0.7.1") {
         clearTopologyCache();
     }
 
@@ -150,7 +154,7 @@ public:
     SimbodyMatterSubsystemRep& operator=(const SimbodyMatterSubsystemRep&);
 
 
-        // IMPLEMENTATIONS OF SUBSYSTEM::GUTS VIRTUAL METHODS
+    // IMPLEMENTATIONS OF SUBSYSTEM::GUTS VIRTUAL METHODS
 
     // Subsystem::Guts destructor is virtual
     ~SimbodyMatterSubsystemRep() {
@@ -163,18 +167,19 @@ public:
         return new SimbodyMatterSubsystemRep(*this);
     }
 
-    int realizeSubsystemTopologyImpl    (State&) const override;
-    int realizeSubsystemModelImpl       (State&) const override;
-    int realizeSubsystemInstanceImpl    (const State&) const override;
-    int realizeSubsystemTimeImpl        (const State&) const override;
-    int realizeSubsystemPositionImpl    (const State&) const override;
-    int realizeSubsystemVelocityImpl    (const State&) const override;
-    int realizeSubsystemDynamicsImpl    (const State&) const override;
+    int realizeSubsystemTopologyImpl(State&) const override;
+    int realizeSubsystemModelImpl(State&) const override;
+    int realizeSubsystemInstanceImpl(const State&) const override;
+    int realizeSubsystemTimeImpl(const State&) const override;
+    int realizeSubsystemPositionImpl(const State&) const override;
+    int realizeSubsystemVelocityImpl(const State&) const override;
+    int realizeSubsystemDynamicsImpl(const State&) const override;
     int realizeSubsystemAccelerationImpl(const State&) const override;
-    int realizeSubsystemReportImpl      (const State&) const override;
+    int realizeSubsystemReportImpl(const State&) const override;
 
-    int calcDecorativeGeometryAndAppendImpl
-       (const State& s, Stage stage, Array_<DecorativeGeometry>& geom) const override;
+    int calcDecorativeGeometryAndAppendImpl(const State& s,
+                                            Stage stage,
+                                            Array_<DecorativeGeometry>& geom) const override;
 
     // TODO: these are just unit weights and tolerances. They should be calculated
     // to be something more reasonable.
@@ -197,7 +202,7 @@ public:
         return 0;
     }
 
-        // END OF SUBSYSTEM::GUTS VIRTUALS.
+    // END OF SUBSYSTEM::GUTS VIRTUALS.
 
     // Return the MultibodySystem which owns this MatterSubsystem.
     const MultibodySystem& getMultibodySystem() const {
@@ -205,19 +210,20 @@ public:
     }
 
 
-        // CONSTRUCTION STAGE //
+    // CONSTRUCTION STAGE //
 
     // The SimbodyMatterSubsystemRep takes over ownership of the child
-    // MobilizedBody handle (leaving child as a non-owner reference), and 
-    // makes it a child (outboard body) of the indicated parent. The new 
+    // MobilizedBody handle (leaving child as a non-owner reference), and
+    // makes it a child (outboard body) of the indicated parent. The new
     // child body's id is returned, and will be greater than the parent's id.
 
     MobilizedBodyIndex adoptMobilizedBody(MobilizedBodyIndex parentIndex, MobilizedBody& child);
-    int getNumMobilizedBodies() const {return (int)mobilizedBodies.size();}
+    int getNumMobilizedBodies() const {
+        return (int)mobilizedBodies.size();
+    }
 
     const MobilizedBody& getMobilizedBody(MobilizedBodyIndex ix) const {
-        SimTK_INDEXCHECK(ix, (int)mobilizedBodies.size(),
-                         "SimbodyMatterSubsystem::getMobilizedBody()");
+        SimTK_INDEXCHECK(ix, (int)mobilizedBodies.size(), "SimbodyMatterSubsystem::getMobilizedBody()");
         assert(mobilizedBodies[ix]);
         return *mobilizedBodies[ix];
     }
@@ -227,12 +233,11 @@ public:
     // Otherwise every time someone references Ground, e.g., by calling
     // matterSubsys.Ground() the subsystem would have its topology marked
     // invalid. For this reason, and also because the main program normally
-    // retains a writable reference to MobilizedBodies, it is essential that 
-    // every non-const method of MobilizedBody and its many descendants mark 
+    // retains a writable reference to MobilizedBodies, it is essential that
+    // every non-const method of MobilizedBody and its many descendants mark
     // the subsystem topology invalid when called.
     MobilizedBody& updMobilizedBody(MobilizedBodyIndex ix) {
-        SimTK_INDEXCHECK(ix, (int)mobilizedBodies.size(),
-                         "SimbodyMatterSubsystem::updMobilizedBody()");
+        SimTK_INDEXCHECK(ix, (int)mobilizedBodies.size(), "SimbodyMatterSubsystem::updMobilizedBody()");
         assert(mobilizedBodies[ix]);
         return *mobilizedBodies[ix]; // topology not marked invalid yet
     }
@@ -252,61 +257,56 @@ public:
     ConstraintIndex adoptConstraint(Constraint& child);
 
     const Constraint& getConstraint(ConstraintIndex ix) const {
-        SimTK_INDEXCHECK(ix, (int)constraints.size(),
-                         "SimbodyMatterSubsystem::getConstraint()");
+        SimTK_INDEXCHECK(ix, (int)constraints.size(), "SimbodyMatterSubsystem::getConstraint()");
         assert(constraints[ix]);
         return *constraints[ix];
     }
     Constraint& updConstraint(ConstraintIndex ix) {
-        SimTK_INDEXCHECK(ix, (int)constraints.size(),
-                         "SimbodyMatterSubsystem::updConstraint()");
+        SimTK_INDEXCHECK(ix, (int)constraints.size(), "SimbodyMatterSubsystem::updConstraint()");
         assert(constraints[ix]);
         return *constraints[ix];
     }
 
     UnilateralContactIndex adoptUnilateralContact(UnilateralContact*);
-    int getNumUnilateralContacts() const 
-    {   return (int)uniContacts.size(); }
-    const UnilateralContact& 
-    getUnilateralContact(UnilateralContactIndex ix) const {
-        SimTK_INDEXCHECK(ix, (int)uniContacts.size(),
-                         "SimbodyMatterSubsystem::getUnilateralContact()");
+    int getNumUnilateralContacts() const {
+        return (int)uniContacts.size();
+    }
+    const UnilateralContact& getUnilateralContact(UnilateralContactIndex ix) const {
+        SimTK_INDEXCHECK(ix, (int)uniContacts.size(), "SimbodyMatterSubsystem::getUnilateralContact()");
         assert(uniContacts[ix]);
         return *uniContacts[ix];
     }
-    UnilateralContact& 
-    updUnilateralContact(UnilateralContactIndex ix) {
-        SimTK_INDEXCHECK(ix, (int)uniContacts.size(),
-                         "SimbodyMatterSubsystem::updUnilateralContact()");
+    UnilateralContact& updUnilateralContact(UnilateralContactIndex ix) {
+        SimTK_INDEXCHECK(ix, (int)uniContacts.size(), "SimbodyMatterSubsystem::updUnilateralContact()");
         assert(uniContacts[ix]);
         return *uniContacts[ix];
     }
 
     StateLimitedFrictionIndex adoptStateLimitedFriction(StateLimitedFriction*);
-    int getNumStateLimitedFrictions() const 
-    {   return (int)stateLtdFriction.size(); }
+    int getNumStateLimitedFrictions() const {
+        return (int)stateLtdFriction.size();
+    }
 
-    const StateLimitedFriction& 
-    getStateLimitedFriction(StateLimitedFrictionIndex ix) const {
-        SimTK_INDEXCHECK(ix, (int)stateLtdFriction.size(),
+    const StateLimitedFriction& getStateLimitedFriction(StateLimitedFrictionIndex ix) const {
+        SimTK_INDEXCHECK(ix,
+                         (int)stateLtdFriction.size(),
                          "SimbodyMatterSubsystem::getStateLimitedFriction()");
         assert(stateLtdFriction[ix]);
         return *stateLtdFriction[ix];
     }
-    StateLimitedFriction& 
-    updStateLimitedFriction(StateLimitedFrictionIndex ix) {
-        SimTK_INDEXCHECK(ix, (int)stateLtdFriction.size(),
+    StateLimitedFriction& updStateLimitedFriction(StateLimitedFrictionIndex ix) {
+        SimTK_INDEXCHECK(ix,
+                         (int)stateLtdFriction.size(),
                          "SimbodyMatterSubsystem::updStateLimitedFriction()");
         assert(stateLtdFriction[ix]);
         return *stateLtdFriction[ix];
     }
 
     // Topology stage cache entry
-    AncestorConstrainedBodyPoolIndex 
-    allocateNextAncestorConstrainedBodyPoolSlot() const {
+    AncestorConstrainedBodyPoolIndex allocateNextAncestorConstrainedBodyPoolSlot() const {
         const AncestorConstrainedBodyPoolIndex nxt = nextAncestorConstrainedBodyPoolSlot;
         // Make this mutable briefly.
-        ++ const_cast<SimbodyMatterSubsystemRep*>(this)->nextAncestorConstrainedBodyPoolSlot;
+        ++const_cast<SimbodyMatterSubsystemRep*>(this)->nextAncestorConstrainedBodyPoolSlot;
         return nxt;
     }
 
@@ -314,27 +314,35 @@ public:
     // These counts can be obtained even during construction, where they
     // just return the current counts.
     // NumBodies includes ground.
-    int getNumBodies()      const {return mobilizedBodies.size();}
-    int getNumParticles()   const {return 0;} // TODO
-    int getNumMobilities()  const {return getTotalDOF();}
-    int getNumConstraints() const {return constraints.size();}
+    int getNumBodies() const {
+        return mobilizedBodies.size();
+    }
+    int getNumParticles() const {
+        return 0;
+    } // TODO
+    int getNumMobilities() const {
+        return getTotalDOF();
+    }
+    int getNumConstraints() const {
+        return constraints.size();
+    }
     MobilizedBodyIndex getParent(MobilizedBodyIndex) const;
     Array_<MobilizedBodyIndex> getChildren(MobilizedBodyIndex) const;
 
-    const MassProperties& getDefaultBodyMassProperties    (MobilizedBodyIndex b) const;
-    const Transform&      getDefaultMobilizerFrame        (MobilizedBodyIndex b) const;
-    const Transform&      getDefaultMobilizerFrameOnParent(MobilizedBodyIndex b) const;
+    const MassProperties& getDefaultBodyMassProperties(MobilizedBodyIndex b) const;
+    const Transform& getDefaultMobilizerFrame(MobilizedBodyIndex b) const;
+    const Transform& getDefaultMobilizerFrameOnParent(MobilizedBodyIndex b) const;
 
     void findMobilizerQs(const State& s, MobilizedBodyIndex body, QIndex& qStart, int& nq) const {
         const RigidBodyNode& n = getRigidBodyNode(body);
         qStart = n.getQIndex();
-        nq     = n.getNQInUse(getModelVars(s));
+        nq = n.getNQInUse(getModelVars(s));
     }
 
     void findMobilizerUs(const State& s, MobilizedBodyIndex body, UIndex& uStart, int& nu) const {
         const RigidBodyNode& n = getRigidBodyNode(body);
         uStart = n.getUIndex();
-        nu     = n.getDOF();
+        nu = n.getDOF();
     }
 
     // Access to Instance variables. //
@@ -370,101 +378,92 @@ public:
         return getInstanceCache(s).totalMass;
     }
 
-    // Extract position, velocity, and acceleration information for 
+    // Extract position, velocity, and acceleration information for
     // MobilizedBodies out of the State cache, accessing only the Tree cache
     // entries at each level, which should already have been marked valid.
-    const Transform&  getBodyTransform   (const State&, MobilizedBodyIndex) const;
-    const SpatialVec& getBodyVelocity    (const State&, MobilizedBodyIndex) const;
+    const Transform& getBodyTransform(const State&, MobilizedBodyIndex) const;
+    const SpatialVec& getBodyVelocity(const State&, MobilizedBodyIndex) const;
     const SpatialVec& getBodyAcceleration(const State&, MobilizedBodyIndex) const;
 
-    // Call at Position stage or later. If necessary, composite body inertias 
+    // Call at Position stage or later. If necessary, composite body inertias
     // will be realized first.
-    const Array_<SpatialInertia,MobilizedBodyIndex>& 
-    getCompositeBodyInertias(const State& s) const {
+    const Array_<SpatialInertia, MobilizedBodyIndex>& getCompositeBodyInertias(const State& s) const {
         realizeCompositeBodyInertias(s);
         return getCompositeBodyInertiaCache(s).compositeBodyInertia;
     }
 
-    // Call at Position stage or later. If necessary, articulated body 
+    // Call at Position stage or later. If necessary, articulated body
     // inertias will be realized first.
-    const Array_<ArticulatedInertia,MobilizedBodyIndex>& 
-    getArticulatedBodyInertias(const State& s) const {
+    const Array_<ArticulatedInertia, MobilizedBodyIndex>& getArticulatedBodyInertias(const State& s) const {
         realizeArticulatedBodyInertias(s);
         return getArticulatedBodyInertiaCache(s).articulatedBodyInertia;
     }
 
-    const Array_<ArticulatedInertia,MobilizedBodyIndex>& 
+    const Array_<ArticulatedInertia, MobilizedBodyIndex>&
     getArticulatedBodyInertiasPlus(const State& s) const {
         realizeArticulatedBodyInertias(s);
         return getArticulatedBodyInertiaCache(s).pPlus;
     }
 
     // Call at Acceleration stage only.
-    const Array_<SpatialVec,MobilizedBodyIndex>& 
-    getArticulatedBodyForces(const State& s) const {
+    const Array_<SpatialVec, MobilizedBodyIndex>& getArticulatedBodyForces(const State& s) const {
         return getTreeAccelerationCache(s).z;
     }
-    const Array_<SpatialVec,MobilizedBodyIndex>& 
-    getArticulatedBodyForcesPlus(const State& s) const {
+    const Array_<SpatialVec, MobilizedBodyIndex>& getArticulatedBodyForcesPlus(const State& s) const {
         return getTreeAccelerationCache(s).zPlus;
     }
 
     // velocity dependent
-    const SpatialVec& 
-    getMobilizerCoriolisAcceleration(const State&, MobilizedBodyIndex) const;
-    const SpatialVec& 
-    getTotalCoriolisAcceleration(const State&, MobilizedBodyIndex) const;
-    const SpatialVec& 
-    getGyroscopicForce(const State&, MobilizedBodyIndex) const;
-    const SpatialVec& 
-    getTotalCentrifugalForces(const State&, MobilizedBodyIndex) const;
+    const SpatialVec& getMobilizerCoriolisAcceleration(const State&, MobilizedBodyIndex) const;
+    const SpatialVec& getTotalCoriolisAcceleration(const State&, MobilizedBodyIndex) const;
+    const SpatialVec& getGyroscopicForce(const State&, MobilizedBodyIndex) const;
+    const SpatialVec& getTotalCentrifugalForces(const State&, MobilizedBodyIndex) const;
 
     /* [I'm not exposing this in the API any more so the detailed comment is
     here rather than in SimbodyMatterSubsystem (where it used to be called
     getMobilizerCentrifugalForces().]
     This is part of the rotational velocity-dependent forces acting on a
-    particular mobilized body B, accounting for gyroscopic forces plus Coriolis 
-    forces due only to the *cross-mobilizer* velocity; this ignores the parent's 
-    velocity and is not useful except as an intermediate term in acceleration 
-    calculations -- see getTotalCentrifugalForces() instead. This is 
-    `F=P*A+b` where `P` is mobod B's articulated body inertia (ABI), `A` is its 
-    cross-mobilizer Coriolis acceleration (as returned by 
-    getMobilizerCoriolisAcceleration()), and `b` is the (rotational 
+    particular mobilized body B, accounting for gyroscopic forces plus Coriolis
+    forces due only to the *cross-mobilizer* velocity; this ignores the parent's
+    velocity and is not useful except as an intermediate term in acceleration
+    calculations -- see getTotalCentrifugalForces() instead. This is
+    `F=P*A+b` where `P` is mobod B's articulated body inertia (ABI), `A` is its
+    cross-mobilizer Coriolis acceleration (as returned by
+    getMobilizerCoriolisAcceleration()), and `b` is the (rotational
     velocity-dependent) spatial gyroscopic force acting on B, as returned by
     getGyroscopicForce().
 
-    Although this computation depends only on position and velocity kinematics, 
-    we won't calculate it until the first time it is needed, generally during 
-    realize(Acceleration). You can get it earlier if you have already realized 
-    velocity kinematics *and* ABIs, either by an explicit call to 
+    Although this computation depends only on position and velocity kinematics,
+    we won't calculate it until the first time it is needed, generally during
+    realize(Acceleration). You can get it earlier if you have already realized
+    velocity kinematics *and* ABIs, either by an explicit call to
     realizeArticulatedBodyInertias() or implicitly by asking for an ABI
-    using getArticulatedBodyInertia(). This method will not initiate ABI 
-    calculation automatically but will throw an exception instead if they are 
+    using getArticulatedBodyInertia(). This method will not initiate ABI
+    calculation automatically but will throw an exception instead if they are
     not available. */
-    const SpatialVec& 
-    getArticulatedBodyCentrifugalForces(const State&, MobilizedBodyIndex) const;
+    const SpatialVec& getArticulatedBodyCentrifugalForces(const State&, MobilizedBodyIndex) const;
 
     // PARTICLES TODO
 
-    const Vector_<Vec3>&  getAllParticleLocations (const State&) const {
+    const Vector_<Vec3>& getAllParticleLocations(const State&) const {
         static const Vector_<Vec3> v;
         return v;
     }
-    const Vector_<Vec3>&  getAllParticleVelocities(const State&) const {
+    const Vector_<Vec3>& getAllParticleVelocities(const State&) const {
         static const Vector_<Vec3> v;
         return v;
     }
     // Invalidate Stage::Position.
-    Vector_<Vec3>&  updAllParticleLocations (State&) const {
+    Vector_<Vec3>& updAllParticleLocations(State&) const {
         static Vector_<Vec3> v;
         return v;
     }
     // Invalidate Stage::Velocity.
-    Vector_<Vec3>&  updAllParticleVelocities(State&) const {
+    Vector_<Vec3>& updAllParticleVelocities(State&) const {
         static Vector_<Vec3> v;
         return v;
     }
-    const Vector_<Vec3>&  getAllParticleAccelerations(const State&) const {
+    const Vector_<Vec3>& getAllParticleAccelerations(const State&) const {
         static const Vector_<Vec3> v;
         return v;
     }
@@ -483,14 +482,10 @@ public:
     // This is used by projectQ().
     bool normalizeQuaternions(State& s, Vector& qErrest) const;
 
-    int projectQ(State& s, Vector& qErrest, 
-                 const ProjectOptions& opts,
-                 ProjectResults& results) const;
-    int projectU(State& s, Vector& uErrest, 
-                 const ProjectOptions& opts,
-                 ProjectResults& results) const;
+    int projectQ(State& s, Vector& qErrest, const ProjectOptions& opts, ProjectResults& results) const;
+    int projectU(State& s, Vector& uErrest, const ProjectOptions& opts, ProjectResults& results) const;
 
-        // REALIZATIONS //
+    // REALIZATIONS //
 
 
     // Call at Instance Stage or later. Depends on q; automatically realized
@@ -526,101 +521,86 @@ public:
     void invalidateArticulatedBodyInertias(const State&) const;
     void invalidateArticulatedBodyVelocity(const State&) const;
 
-        // OPERATORS //
+    // OPERATORS //
 
     Real calcKineticEnergy(const State&) const;
 
-    void calcCompositeBodyInertias(const State&,
-        Array_<SpatialInertia,MobilizedBodyIndex>& R) const;
+    void calcCompositeBodyInertias(const State&, Array_<SpatialInertia, MobilizedBodyIndex>& R) const;
 
-    // Calculate the product J*v where J is the kinematic Jacobian 
+    // Calculate the product J*v where J is the kinematic Jacobian
     // dV/du=~Phi*~H (Schwieters' and Jain's terminology; our H is transposed
-    // from theirs), and  v is a vector in mobility space (internal 
-    // coordinates). If v==u, that is, it is a vector of generalized speeds, 
+    // from theirs), and  v is a vector in mobility space (internal
+    // coordinates). If v==u, that is, it is a vector of generalized speeds,
     // then the result will be V_GB, the spatial velocity of each body.
     // This is an O(N) operator which can be called once the State is realized
     // to Stage::Position or higher. Because this is an operator, there is
     // no effect on the State cache.
-    void multiplyBySystemJacobian(const State&,
-        const Vector&        v,
-        Vector_<SpatialVec>& Jv) const;
+    void multiplyBySystemJacobian(const State&, const Vector& v, Vector_<SpatialVec>& Jv) const;
 
-    // Calculate the product ~J*X where J is the partial velocity Jacobian 
-    // dV/du (~J=H*Phi)and X is a vector of force-space SpatialVec's, one per 
-    // body. See Eq. 76&77 in Schwieters' paper, and see 81a & b for a use of 
+    // Calculate the product ~J*X where J is the partial velocity Jacobian
+    // dV/du (~J=H*Phi)and X is a vector of force-space SpatialVec's, one per
+    // body. See Eq. 76&77 in Schwieters' paper, and see 81a & b for a use of
     // this routine to compute energy gradient in internal coordinates. In that
-    // case X=dE/dR, that is the gradient of the energy w.r.t. atomic positions, 
+    // case X=dE/dR, that is the gradient of the energy w.r.t. atomic positions,
     // summed and shifted to body origins. There we are pretending dR/dq is the
     // same as dV/du, which will be true if dq/dt = u. In general, we have
-    // dR/dq = (dV/du)*N^-1, where dq/dt = N*u (i.e., N= d qdot/du). But note 
+    // dR/dq = (dV/du)*N^-1, where dq/dt = N*u (i.e., N= d qdot/du). But note
     // that this method works in terms of u, not q, so it produces a meaningful
-    // result in all cases, just not one that can be mapped directly back to 
-    // generalized coordinates q. This is an O(n) operator which can be called 
+    // result in all cases, just not one that can be mapped directly back to
+    // generalized coordinates q. This is an O(n) operator which can be called
     // after realizePosition(). Because this is an operator, there is no effect
     // on the State cache.
-    void multiplyBySystemJacobianTranspose(const State&, 
-        const Vector_<SpatialVec>& X, 
-        Vector&                    JtX) const;
+    void multiplyBySystemJacobianTranspose(const State&, const Vector_<SpatialVec>& X, Vector& JtX) const;
 
-    // Given a set of body forces, return the equivalent set of mobilizer torques 
+    // Given a set of body forces, return the equivalent set of mobilizer torques
     // IGNORING CONSTRAINTS.
     // Must be in DynamicsStage so that articulated body inertias are available,
     // however, velocities are ignored. This operator has NO effect on the state
     // cache. It makes a single O(N) pass.
-    void calcTreeEquivalentMobilityForces(const State&, 
-        const Vector_<SpatialVec>& bodyForces,
-        Vector&                    mobilityForces) const;
+    void calcTreeEquivalentMobilityForces(const State&,
+                                          const Vector_<SpatialVec>& bodyForces,
+                                          Vector& mobilityForces) const;
 
     void calcTreeAccelerations(const State& s,
-        const Vector&              mobilityForces,
-        const Vector_<SpatialVec>& bodyForces,
-        const Array_<Real>&        presUDots, // packed
-        Vector&                    netHingeForces,
-        Array_<SpatialVec,MobilizedBodyIndex>& abForcesZ, 
-        Array_<SpatialVec,MobilizedBodyIndex>& abForcesZPlus, 
-        Vector_<SpatialVec>&       A_GB,
-        Vector&                    udot, // in/out (in for prescribed udots)
-        Vector&                    qdotdot,
-        Vector&                    tau) const; 
+                               const Vector& mobilityForces,
+                               const Vector_<SpatialVec>& bodyForces,
+                               const Array_<Real>& presUDots, // packed
+                               Vector& netHingeForces,
+                               Array_<SpatialVec, MobilizedBodyIndex>& abForcesZ,
+                               Array_<SpatialVec, MobilizedBodyIndex>& abForcesZPlus,
+                               Vector_<SpatialVec>& A_GB,
+                               Vector& udot, // in/out (in for prescribed udots)
+                               Vector& qdotdot,
+                               Vector& tau) const;
 
     // Multiply by the mass matrix in O(n) time.
-    void multiplyByM(const State& s,
-        const Vector&             a,
-        Vector&                   Ma) const;
+    void multiplyByM(const State& s, const Vector& a, Vector& Ma) const;
 
     // Multiply by the mass matrix inverse in O(n) time. Works only with the
     // non-prescribed submatrix Mrr of M; entries f_p in f are not accessed,
     // and entries MInvf_p in MInvf are not written.
-    void multiplyByMInv(const State&    s,
-        const Vector&                   f,
-        Vector&                         MInvf) const; 
+    void multiplyByMInv(const State& s, const Vector& f, Vector& MInvf) const;
 
-    
+
     //////////////////////////////////////////////////////////////////////
     // Added from Laurentiu's branches (written prior to the update)
 
-    // Multiply by the square root mass matrix inverse in O(n) time. 
+    // Multiply by the square root mass matrix inverse in O(n) time.
     // Works only with the non-prescribed submatrix Mrr of M;
     // entries v_p in v are not accessed,
     // and entries sqrtMinvV_p in sqrtMinvV are not written.
-    void multiplyBySqrtMInv(const State&    s,
-        const Vector&                       v,
-        Vector&                             sqrtMinvV) const;
+    void multiplyBySqrtMInv(const State& s, const Vector& v, Vector& sqrtMinvV) const;
 
     // Compute the mass matrix determinant O(n) time.
-    void calcDetM(const State&    s,
-        const Vector&             f,
-        Vector&                   MInvf,
-        Real*                     detM) const; // EU
+    void calcDetM(const State& s, const Vector& f, Vector& MInvf,
+                  Real* detM) const; // EU
 
     // Compute the Fixman torque O(n) time.
-    void calcFixmanTorque(const State&    s,
-        const Vector&             f,
-        Vector&                   MInvf,
-        Real*                     detM) const; // EU
+    void calcFixmanTorque(const State& s, const Vector& f, Vector& MInvf,
+                          Real* detM) const; // EU
 
 
-   ///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
 
 
     // Calculate the mass matrix in O(n^2) time. State must have already
@@ -644,12 +624,11 @@ public:
     /////////////////////////////////////////////////////////////////////
 
     void calcTreeResidualForces(const State&,
-        const Vector&               appliedMobilityForces,
-        const Vector_<SpatialVec>&  appliedBodyForces,
-        const Vector&               knownUdot,
-        Vector_<SpatialVec>&        A_GB,
-        Vector&                     residualMobilityForces) const;
-
+                                const Vector& appliedMobilityForces,
+                                const Vector_<SpatialVec>& appliedBodyForces,
+                                const Vector& knownUdot,
+                                Vector_<SpatialVec>& A_GB,
+                                Vector& residualMobilityForces) const;
 
 
     // Must be in Stage::Position to calculate out_q = N(q)*in_u (e.g., qdot=N*u)
@@ -665,35 +644,35 @@ public:
     void multiplyByNInv(const State& s, bool matrixOnRight, const Vector& in, Vector& out) const;
 
     // Must be in Stage::Velocity to calculate out_q = NDot(q,u)*in_u
-    // or out_u = in_q * NDot(q,u). Note that one of "in" and "out" is always 
-    // "q-like" while the other is "u-like", but which is which changes if the 
+    // or out_u = in_q * NDot(q,u). Note that one of "in" and "out" is always
+    // "q-like" while the other is "u-like", but which is which changes if the
     // matrix is on the right. This is an O(n) operator since NDot is block diagonal.
     void multiplyByNDot(const State& s, bool matrixOnRight, const Vector& in, Vector& out) const;
 
     // Must be in Stage::Position to calculate qdot = N*u.
-    void calcQDot(const State& s,
-        const Vector& u,
-        Vector&       qdot) const;
+    void calcQDot(const State& s, const Vector& u, Vector& qdot) const;
 
     // Must be in Stage::Velocity to calculate qdotdot = Ndot*u + N*udot.
-    void calcQDotDot(const State& s,
-        const Vector& udot,
-        Vector&       qdotdot) const;
+    void calcQDotDot(const State& s, const Vector& udot, Vector& qdotdot) const;
 
-        // MOBILIZER OPERATORS //
+    // MOBILIZER OPERATORS //
 
-    // These operators deal with an isolated mobilizer and are thus independent of 
+    // These operators deal with an isolated mobilizer and are thus independent of
     // any other generalized coordinates or speeds.
 
     // State must be realized to Stage::Position, so that we can extract N(q) from it to calculate
     // qdot=N(q)*u for this mobilizer.
-    void calcMobilizerQDotFromU(const State&, MobilizedBodyIndex, int nu, const Real* u, 
-                                int nq, Real* qdot) const;
+    void
+    calcMobilizerQDotFromU(const State&, MobilizedBodyIndex, int nu, const Real* u, int nq, Real* qdot) const;
 
-    // State must be realized to Stage::Velocity, so that we can extract N(q), NDot(q,u), and u from it to calculate
-    // qdotdot=N(q)*udot + NDot(q,u)*u for this mobilizer.
-    void calcMobilizerQDotDotFromUDot(const State&, MobilizedBodyIndex, int nu, const Real* udot, 
-                                      int nq, Real* qdotdot) const;
+    // State must be realized to Stage::Velocity, so that we can extract N(q), NDot(q,u), and u from it to
+    // calculate qdotdot=N(q)*udot + NDot(q,u)*u for this mobilizer.
+    void calcMobilizerQDotDotFromUDot(const State&,
+                                      MobilizedBodyIndex,
+                                      int nu,
+                                      const Real* udot,
+                                      int nq,
+                                      Real* qdotdot) const;
 
     // State must be realized through Stage::Instance. Neither the State nor its
     // cache are modified by this method, since it is an operator.
@@ -716,44 +695,62 @@ public:
     // and the called mobilizer agree on the generalized accelerations.
     // Returns A_FM(q,u,udot)=H_FM(q)*udot + HDot_FM(q,u)*u where the q and u dependencies
     // are extracted from the State via H_FM(q), and HDot_FM(q,u).
-    SpatialVec calcMobilizerAccelerationFromUDot(const State&, MobilizedBodyIndex, int nu, const Real* udot) const;
+    SpatialVec
+    calcMobilizerAccelerationFromUDot(const State&, MobilizedBodyIndex, int nu, const Real* udot) const;
 
     // These perform the same computations as above but then transform the results so that they
     // relate the child body's frame B to its parent body's frame P, rather than the M and F frames
     // which are attached to B and P respectively but differ by a constant transform.
-    Transform  calcParentToChildTransformFromQ(const State& s, MobilizedBodyIndex mb, int nq, const Real* q) const;
-    SpatialVec calcParentToChildVelocityFromU (const State& s, MobilizedBodyIndex mb, int nu, const Real* u) const;
-    SpatialVec calcParentToChildAccelerationFromUDot(const State& s, MobilizedBodyIndex mb, int nu, const Real* udot) const;
+    Transform
+    calcParentToChildTransformFromQ(const State& s, MobilizedBodyIndex mb, int nq, const Real* q) const;
+    SpatialVec
+    calcParentToChildVelocityFromU(const State& s, MobilizedBodyIndex mb, int nu, const Real* u) const;
+    SpatialVec calcParentToChildAccelerationFromUDot(const State& s,
+                                                     MobilizedBodyIndex mb,
+                                                     int nu,
+                                                     const Real* udot) const;
 
 
-    void setDefaultModelValues       (const SBTopologyCache&, SBModelVars&)        const;
-    void setDefaultInstanceValues    (const SBModelVars&,     SBInstanceVars&)     const;
-    void setDefaultTimeValues        (const SBModelVars&,     SBTimeVars&)         const;
-    void setDefaultPositionValues    (const SBModelVars&,     Vector& q)           const;
-    void setDefaultVelocityValues    (const SBModelVars&,     Vector& u)           const;
-    void setDefaultDynamicsValues    (const SBModelVars&,     SBDynamicsVars&)     const;
-    void setDefaultAccelerationValues(const SBModelVars&,     SBAccelerationVars&) const;
+    void setDefaultModelValues(const SBTopologyCache&, SBModelVars&) const;
+    void setDefaultInstanceValues(const SBModelVars&, SBInstanceVars&) const;
+    void setDefaultTimeValues(const SBModelVars&, SBTimeVars&) const;
+    void setDefaultPositionValues(const SBModelVars&, Vector& q) const;
+    void setDefaultVelocityValues(const SBModelVars&, Vector& u) const;
+    void setDefaultDynamicsValues(const SBModelVars&, SBDynamicsVars&) const;
+    void setDefaultAccelerationValues(const SBModelVars&, SBAccelerationVars&) const;
 
-        // CALLABLE AFTER realizeTopology()
+    // CALLABLE AFTER realizeTopology()
 
-    int getTotalDOF()    const {assert(subsystemTopologyHasBeenRealized()); return DOFTotal;}
-    int getTotalSqDOF()  const {assert(subsystemTopologyHasBeenRealized()); return SqDOFTotal;}
-    int getTotalQAlloc() const {assert(subsystemTopologyHasBeenRealized()); return maxNQTotal;}
-
-    int getNumTopologicalPositionConstraintEquations()     const {
-        assert(subsystemTopologyHasBeenRealized()); return nextQErrSlot;
+    int getTotalDOF() const {
+        assert(subsystemTopologyHasBeenRealized());
+        return DOFTotal;
     }
-    int getNumTopologicalVelocityConstraintEquations()     const {
-        assert(subsystemTopologyHasBeenRealized()); return nextUErrSlot;
+    int getTotalSqDOF() const {
+        assert(subsystemTopologyHasBeenRealized());
+        return SqDOFTotal;
+    }
+    int getTotalQAlloc() const {
+        assert(subsystemTopologyHasBeenRealized());
+        return maxNQTotal;
+    }
+
+    int getNumTopologicalPositionConstraintEquations() const {
+        assert(subsystemTopologyHasBeenRealized());
+        return nextQErrSlot;
+    }
+    int getNumTopologicalVelocityConstraintEquations() const {
+        assert(subsystemTopologyHasBeenRealized());
+        return nextUErrSlot;
     }
     int getNumTopologicalAccelerationConstraintEquations() const {
-        assert(subsystemTopologyHasBeenRealized()); return nextMultSlot;
+        assert(subsystemTopologyHasBeenRealized());
+        return nextMultSlot;
     }
 
     int getQIndex(MobilizedBodyIndex) const;
     int getQAlloc(MobilizedBodyIndex) const;
     int getUIndex(MobilizedBodyIndex) const;
-    int getDOF   (MobilizedBodyIndex) const;
+    int getDOF(MobilizedBodyIndex) const;
 
     // Modeling info.
 
@@ -764,9 +761,9 @@ public:
     void convertToEulerAngles(const State& inputState, State& outputState) const;
     void convertToQuaternions(const State& inputState, State& outputState) const;
 
-        // CALLABLE AFTER realizeModel()
+    // CALLABLE AFTER realizeModel()
 
-    int  getNumQuaternionsInUse(const State&) const;                // mquat
+    int getNumQuaternionsInUse(const State&) const; // mquat
     bool isUsingQuaternion(const State&, MobilizedBodyIndex) const;
     QuaternionPoolIndex getQuaternionPoolIndex(const State&, MobilizedBodyIndex) const; // Invalid if none
 
@@ -775,17 +772,17 @@ public:
     // include both). The total number of position-level constraints is thus
     // getNumHolonomicConstraintEquationsInUse()+getNumQuaternionsInUse()==mp+mquat.
 
-    int getNumHolonomicConstraintEquationsInUse       (const State&) const; // mh
-    int getNumNonholonomicConstraintEquationsInUse    (const State&) const; // mn
+    int getNumHolonomicConstraintEquationsInUse(const State&) const;        // mh
+    int getNumNonholonomicConstraintEquationsInUse(const State&) const;     // mn
     int getNumAccelerationOnlyConstraintEquationsInUse(const State&) const; // ma
 
-    void calcHolonomicConstraintMatrixPNInv    (const State&, Matrix&) const; // mh X nq
-    void calcHolonomicVelocityConstraintMatrixP(const State&, Matrix&) const; // mh X nu
+    void calcHolonomicConstraintMatrixPNInv(const State&, Matrix&) const;      // mh X nq
+    void calcHolonomicVelocityConstraintMatrixP(const State&, Matrix&) const;  // mh X nu
     void calcHolonomicVelocityConstraintMatrixPt(const State&, Matrix&) const; // nu X mh
-    void calcNonholonomicConstraintMatrixV     (const State&, Matrix&) const; // mn X nu
-    void calcNonholonomicConstraintMatrixVt    (const State&, Matrix&) const; // nu X mn
-    void calcAccelerationOnlyConstraintMatrixA (const State&, Matrix&) const; // ma X nu
-    void calcAccelerationOnlyConstraintMatrixAt(const State&, Matrix&) const; // nu X ma
+    void calcNonholonomicConstraintMatrixV(const State&, Matrix&) const;       // mn X nu
+    void calcNonholonomicConstraintMatrixVt(const State&, Matrix&) const;      // nu X mn
+    void calcAccelerationOnlyConstraintMatrixA(const State&, Matrix&) const;   // ma X nu
+    void calcAccelerationOnlyConstraintMatrixAt(const State&, Matrix&) const;  // nu X ma
 
     void calcMobilizerReactionForces(const State& s, Vector_<SpatialVec>& forces) const;
     // This alternative is for debugging and testing; it is slow but should
@@ -793,10 +790,10 @@ public:
     void calcMobilizerReactionForcesUsingFreebodyMethod(const State& s, Vector_<SpatialVec>& forces) const;
 
 
-
     // Constraint multipliers are known to the State object.
-    const Vector& getConstraintMultipliers(const State& s) const
-    {   return this->getMultipliers(s); }
+    const Vector& getConstraintMultipliers(const State& s) const {
+        return this->getMultipliers(s);
+    }
 
     // But taus (prescribed motion "multipliers") are internal.
     const Vector& getMotionMultipliers(const State& s) const {
@@ -806,157 +803,142 @@ public:
 
     Vector calcMotionErrors(const State& state, const Stage& stage) const;
 
-    void findMotionForces(const State&         s,
-                          Vector&              mobilityForces) const;
-    void findConstraintForces(const State&         s, 
-                              Vector_<SpatialVec>& bodyForcesInG,
-                              Vector&              mobilityForces) const;
+    void findMotionForces(const State& s, Vector& mobilityForces) const;
+    void
+    findConstraintForces(const State& s, Vector_<SpatialVec>& bodyForcesInG, Vector& mobilityForces) const;
 
     Real calcMotionPower(const State& s) const;
     Real calcConstraintPower(const State& s) const;
 
-    // Treating all constraints together, given a comprehensive set of 
-    // multipliers lambda, generate the complete set of body and mobility 
+    // Treating all constraints together, given a comprehensive set of
+    // multipliers lambda, generate the complete set of body and mobility
     // forces applied by all the constraints. Return the
     // individual Constraints' force contributions in the final two arguments.
-    void calcConstraintForcesFromMultipliers
-      (const State&         state, 
-       const Vector&        lambda,
-       Vector_<SpatialVec>& bodyForcesInG,
-       Vector&              mobilityForces,
-       Array_<SpatialVec>&  constrainedBodyForcesInG,
-       Array_<Real>&        contraintMobilityForces) const;
+    void calcConstraintForcesFromMultipliers(const State& state,
+                                             const Vector& lambda,
+                                             Vector_<SpatialVec>& bodyForcesInG,
+                                             Vector& mobilityForces,
+                                             Array_<SpatialVec>& constrainedBodyForcesInG,
+                                             Array_<Real>& contraintMobilityForces) const;
 
     // Call this signature if you don't care about the individual constraint
     // contributions.
-    void calcConstraintForcesFromMultipliers
-      (const State&         state, 
-       const Vector&        lambda,
-       Vector_<SpatialVec>& bodyForcesInG,
-       Vector&              mobilityForces) const
-    {
+    void calcConstraintForcesFromMultipliers(const State& state,
+                                             const Vector& lambda,
+                                             Vector_<SpatialVec>& bodyForcesInG,
+                                             Vector& mobilityForces) const {
         const SBInstanceCache& ic = getInstanceCache(state);
         const int ncb = ic.totalNConstrainedBodiesInUse;
         const int ncu = ic.totalNConstrainedUInUse;
         Array_<SpatialVec> constrainedBodyForcesInG(ncb);
-        Array_<Real>       constraintMobilityForces(ncu);
-        calcConstraintForcesFromMultipliers(state,lambda,bodyForcesInG,
-            mobilityForces,constrainedBodyForcesInG,constraintMobilityForces);
+        Array_<Real> constraintMobilityForces(ncu);
+        calcConstraintForcesFromMultipliers(state,
+                                            lambda,
+                                            bodyForcesInG,
+                                            mobilityForces,
+                                            constrainedBodyForcesInG,
+                                            constraintMobilityForces);
     }
 
-    // Form the product 
+    // Form the product
     //    fu = [ ~P ~V ~A ] * lambda
-    // with all or a subset of P,V,A included. The multiplier-like vector 
+    // with all or a subset of P,V,A included. The multiplier-like vector
     // must have length m=mp+mv+ma always. This is an O(n+m) method.
-    void multiplyByPVATranspose(const State&     state,
-                                bool             includeP,
-                                bool             includeV,
-                                bool             includeA,
-                                const Vector&    lambda,
-                                Vector&          fu) const;
+    void multiplyByPVATranspose(const State& state,
+                                bool includeP,
+                                bool includeV,
+                                bool includeA,
+                                const Vector& lambda,
+                                Vector& fu) const;
 
-    // Explicitly form the u-space constraint Jacobian transpose 
-    // ~G=[~P ~V ~A] or selected submatrices of it. Performance is best if the 
+    // Explicitly form the u-space constraint Jacobian transpose
+    // ~G=[~P ~V ~A] or selected submatrices of it. Performance is best if the
     // output matrix has columns stored contiguously in memory, but this method
-    // will work anyway, in that case using a contiguous temporary for column 
+    // will work anyway, in that case using a contiguous temporary for column
     // calculations and then copying out into the result. The matrix will be
     // resized as necessary to nu X (mp+mv+ma) where the constraint dimensions
     // can be zero if that submatrix is not selected.
-    void calcPVATranspose(  const State&     state,
-                            bool             includeP,
-                            bool             includeV,
-                            bool             includeA,
-                            Matrix&          PVAt) const;
+    void
+    calcPVATranspose(const State& state, bool includeP, bool includeV, bool includeA, Matrix& PVAt) const;
 
-    // Form the product 
+    // Form the product
     //    fq = [ ~Pq ] * lambdap
     // The multiplier-like vector must have length m=mp always.
     // This is equivalent to ~(P*N^-1)*lambdap = ~N^-1 * (~P * lambdap).
     // This is an O(n+mp) method.
-    void multiplyByPqTranspose(const State&     state,
-                               const Vector&    lambdap,
-                               Vector&          fq) const;
+    void multiplyByPqTranspose(const State& state, const Vector& lambdap, Vector& fq) const;
 
     // Explicitly form the q-space holonomic constraint Jacobian transpose
-    // Pqt (= ~(N^-1) * ~P). Performance is best if the output matrix has 
+    // Pqt (= ~(N^-1) * ~P). Performance is best if the output matrix has
     // columns stored contiguously in memory, but this method will work anyway,
-    // in that case using a contiguous temporary for column calculations and 
-    // then copying out into the result. The matrix will be resized as 
+    // in that case using a contiguous temporary for column calculations and
+    // then copying out into the result. The matrix will be resized as
     // necessary to nq X mp.
-    void calcPqTranspose(   const State&     state,
-                            Matrix&          Pqt) const;
+    void calcPqTranspose(const State& state, Matrix& Pqt) const;
 
     // Calculate the bias vector from the constraint error
     // equations used in multiplyByPVA. Here bias is what you would get
-    // when ulike==0. The output Vector must use contiguous storage. It will 
+    // when ulike==0. The output Vector must use contiguous storage. It will
     // be resized if necessary to length m=mp+mv+ma.
     void calcBiasForMultiplyByPVA(const State& state,
-                                  bool         includeP,
-                                  bool         includeV,
-                                  bool         includeA,
-                                  Vector&      bias) const;
+                                  bool includeP,
+                                  bool includeV,
+                                  bool includeA,
+                                  Vector& bias) const;
 
     // Calculate the bias vector from the acceleration constraint error
     // equations used. Here bias is what you would get from paerr, vaerr,
     // and aerr when udot==0. This is different than calcBiasForMultiplyByPVA()
     // because that method uses pverr for holonomic constraints rather than
-    // paerr. The output Vector must use contiguous storage. It will 
+    // paerr. The output Vector must use contiguous storage. It will
     // be resized if necessary to length m=mp+mv+ma.
     void calcBiasForAccelerationConstraints(const State& state,
-                                            bool         includeP,
-                                            bool         includeV,
-                                            bool         includeA,
-                                            Vector&      bias) const;
+                                            bool includeP,
+                                            bool includeV,
+                                            bool includeA,
+                                            Vector& bias) const;
 
-    void calcBiasForMultiplyByPq(const State& state,
-                                 Vector&      bias) const
-    {   calcBiasForMultiplyByPVA(state,true,false,false,bias); }
+    void calcBiasForMultiplyByPq(const State& state, Vector& bias) const {
+        calcBiasForMultiplyByPVA(state, true, false, false, bias);
+    }
 
     // Given a bias calculated by the above method using the same settings
-    // for the "include" flags, form the product 
+    // for the "include" flags, form the product
     //           [ P ]
     //    PVAu = [ V ] * ulike
     //           [ A ]
     // with all or a subset of P,V,A included. The u-like vector must have
     // length nu always. This is an O(n+m) method.
-    void multiplyByPVA(const State&     state,
-                       bool             includeP,
-                       bool             includeV,
-                       bool             includeA,
-                       const Vector&    bias,
-                       const Vector&    ulike,
-                       Vector&          PVAu) const;
+    void multiplyByPVA(const State& state,
+                       bool includeP,
+                       bool includeV,
+                       bool includeA,
+                       const Vector& bias,
+                       const Vector& ulike,
+                       Vector& PVAu) const;
 
-    // Explicitly form the u-space constraint Jacobian G=[P;V;A] or 
-    // selected submatrices of it. Performance is best if the output matrix 
-    // has columns stored contiguously in memory, but this method will work 
-    // anyway, in that case using a contiguous temporary for column 
+    // Explicitly form the u-space constraint Jacobian G=[P;V;A] or
+    // selected submatrices of it. Performance is best if the output matrix
+    // has columns stored contiguously in memory, but this method will work
+    // anyway, in that case using a contiguous temporary for column
     // calculations and then copying out into the result. The matrix will be
     // resized as necessary to (mp+mv+ma) X nu where the constraint dimensions
     // can be zero if that submatrix is not selected.
-    void calcPVA(   const State&     state,
-                    bool             includeP,
-                    bool             includeV,
-                    bool             includeA,
-                    Matrix&          PVA) const;
+    void calcPVA(const State& state, bool includeP, bool includeV, bool includeA, Matrix& PVA) const;
 
     // Given a bias calculated by the above method using just includeP=true
     // (or the leading bias_p segment of a complete bias vector), form the
-    // product PqXqlike = Pq*qlike (= P*N^-1*qlike). The q-like vector must 
+    // product PqXqlike = Pq*qlike (= P*N^-1*qlike). The q-like vector must
     // have length nq always and all Vectors must use contiguous storage.
     // This is an O(nq+mp) method.
-    void multiplyByPq(  const State&   state,
-                        const Vector&  bias_p,
-                        const Vector&  qlike,
-                        Vector&        PqXqlike) const;
+    void multiplyByPq(const State& state, const Vector& bias_p, const Vector& qlike, Vector& PqXqlike) const;
 
     // Explicitly form the q-space holonomic constraint Jacobian Pq (= P*N^-1).
     // Performance is best if the output matrix has columns stored contiguously
-    // in memory, but this method will work anyway, in that case using a 
-    // contiguous temporary for column calculations and then copying out into 
+    // in memory, but this method will work anyway, in that case using a
+    // contiguous temporary for column calculations and then copying out into
     // the result. The matrix will be resized as necessary to mp X nq.
-    void calcPq(    const State&     state,
-                    Matrix&          Pq) const;
+    void calcPq(const State& state, Matrix& Pq) const;
 
     // Calculate the mXm "projected mass matrix" G * M^-1 * G^T. By using
     // a combination of O(n) operators we can calculate this in O(m*n) time.
@@ -965,19 +947,16 @@ public:
     // are holonomic in which case Position will do. This matrix is used
     // when solving for Lagrange multipliers: (G M^-1 G^T) lambda = aerr
     // gives values for lambda that elimnate aerr.
-    // Performance is best if the output matrix has columns stored 
+    // Performance is best if the output matrix has columns stored
     // contiguously in memory, but this method will work anyway, in that case
     // using a contiguous temporary for column calculations and then copying
     // out into the result.
-    void calcGMInvGt(const State&   state,
-                     Matrix&        GMInvGt) const;
+    void calcGMInvGt(const State& state, Matrix& GMInvGt) const;
 
     // Use factored GMInvGt to solve GMinvGt*impulse=deltaV. The main benefit
     // of this method is that it promises to use the same method Simbody does
     // to deal with constraint redundancies.
-    void solveForConstraintImpulses(const State&     state,
-                                    const Vector&    deltaV,
-                                    Vector&          impulse) const;
+    void solveForConstraintImpulses(const State& state, const Vector& deltaV, Vector& impulse) const;
 
     // Given an array of nu udots, return nb body accelerations in G (including
     // Ground as the 0th body with A_GB[0]=0). The returned accelerations are
@@ -985,30 +964,37 @@ public:
     // extracted from the supplied state, which must have been realized to
     // Velocity stage.
     // The input and output Vectors must use contiguous storage.
-    void calcBodyAccelerationFromUDot(const State&          state,
-                                      const Vector_<Real>&  knownUDot,
-                                      Vector_<SpatialVec>&  A_GB) const;
+    void calcBodyAccelerationFromUDot(const State& state,
+                                      const Vector_<Real>& knownUDot,
+                                      Vector_<SpatialVec>& A_GB) const;
 
-    // Given an array of nu udots and already-calculated corresponding 
+    // Given an array of nu udots and already-calculated corresponding
     // qdotdot=N*udot + NDot*u, and the set of corresponding
     // Ground-relative body accelerations, compute the constraint
     // acceleration errors that result due to the constraints currently active
     // in the given state. All acceleration-level constraints are included:
-    // holonomic second derivatives, nonholonomic first derivatives, and 
+    // holonomic second derivatives, nonholonomic first derivatives, and
     // acceleration-only constraints. This is a pure operator and does not
     // affect the state or state cache. Vectors must use contiguous data.
     // State must have been realized through Velocity stage.
-    void calcConstraintAccelerationErrors
-       (const State&                state,
-        const Vector_<SpatialVec>&  A_GB,
-        const Vector_<Real>&        udot,
-        const Vector_<Real>&        qdotdot,
-        Vector&                     pvaerr) const;
+    void calcConstraintAccelerationErrors(const State& state,
+                                          const Vector_<SpatialVec>& A_GB,
+                                          const Vector_<Real>& udot,
+                                          const Vector_<Real>& qdotdot,
+                                          Vector& pvaerr) const;
 
-    void enforcePositionConstraints(State& s, Real consAccuracy, const Vector& yWeights,
-                                    const Vector& ooTols, Vector& yErrest, ProjectOptions) const;
-    void enforceVelocityConstraints(State& s, Real consAccuracy, const Vector& yWeights,
-                                    const Vector& ooTols, Vector& yErrest, ProjectOptions) const;
+    void enforcePositionConstraints(State& s,
+                                    Real consAccuracy,
+                                    const Vector& yWeights,
+                                    const Vector& ooTols,
+                                    Vector& yErrest,
+                                    ProjectOptions) const;
+    void enforceVelocityConstraints(State& s,
+                                    Real consAccuracy,
+                                    const Vector& yWeights,
+                                    const Vector& ooTols,
+                                    Vector& yErrest,
+                                    ProjectOptions) const;
 
     // Unconstrained (tree) dynamics methods for use during realization.
 
@@ -1030,280 +1016,315 @@ public:
     // that is stored directly in the SimbodyMatterSubsystemRep. This is the one
     // that counts - there is a copy in the State but it is just for sanity
     // checking.
-    const SBTopologyCache& getMatterTopologyCache() const 
-    {   return topologyCache; }
+    const SBTopologyCache& getMatterTopologyCache() const {
+        return topologyCache;
+    }
 
     // The TopologyCache in the State should be a copy of the one
     // we keep locally here. We always use our local copy rather than
     // this one except for checking that the State looks reasonable.
     const SBTopologyCache& getTopologyCache(const State& s) const {
         assert(subsystemTopologyHasBeenRealized() && topologyCacheIndex >= 0);
-        return Value<SBTopologyCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCacheIndex)).get();
+        return Value<SBTopologyCache>::downcast(s.getCacheEntry(getMySubsystemIndex(), topologyCacheIndex))
+            .get();
     }
-    SBTopologyCache& updTopologyCache(const State& s) const { //mutable
+    SBTopologyCache& updTopologyCache(const State& s) const { // mutable
         assert(subsystemTopologyHasBeenRealized() && topologyCacheIndex >= 0);
-        return Value<SBTopologyCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCacheIndex)).upd();
+        return Value<SBTopologyCache>::updDowncast(s.updCacheEntry(getMySubsystemIndex(), topologyCacheIndex))
+            .upd();
     }
 
     const SBModelCache& getModelCache(const State& s) const {
-        return Value<SBModelCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.modelingCacheIndex)).get();
+        return Value<SBModelCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.modelingCacheIndex))
+            .get();
     }
-    SBModelCache& updModelCache(const State& s) const { //mutable
-        return Value<SBModelCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.modelingCacheIndex)).upd();
+    SBModelCache& updModelCache(const State& s) const { // mutable
+        return Value<SBModelCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.modelingCacheIndex))
+            .upd();
     }
 
     const SBInstanceCache& getInstanceCache(const State& s) const {
-        return Value<SBInstanceCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.instanceCacheIndex)).get();
+        return Value<SBInstanceCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.instanceCacheIndex))
+            .get();
     }
-    SBInstanceCache& updInstanceCache(const State& s) const { //mutable
-        return Value<SBInstanceCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.instanceCacheIndex)).upd();
+    SBInstanceCache& updInstanceCache(const State& s) const { // mutable
+        return Value<SBInstanceCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.instanceCacheIndex))
+            .upd();
     }
 
     const SBTimeCache& getTimeCache(const State& s) const {
-        return Value<SBTimeCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.timeCacheIndex)).get();
+        return Value<SBTimeCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.timeCacheIndex))
+            .get();
     }
-    SBTimeCache& updTimeCache(const State& s) const { //mutable
-        return Value<SBTimeCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.timeCacheIndex)).upd();
+    SBTimeCache& updTimeCache(const State& s) const { // mutable
+        return Value<SBTimeCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.timeCacheIndex))
+            .upd();
     }
 
     const SBTreePositionCache& getTreePositionCache(const State& state) const {
-        return Value<SBTreePositionCache>::downcast
-           (state.getCacheEntry(getMySubsystemIndex(),
-                                topologyCache.treePositionCacheIndex)).get();
+        return Value<SBTreePositionCache>::downcast(
+                   state.getCacheEntry(getMySubsystemIndex(), topologyCache.treePositionCacheIndex))
+            .get();
     }
 
-    SBTreePositionCache& updTreePositionCache(const State& s) const { //mutable
-        return Value<SBTreePositionCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.treePositionCacheIndex)).upd();
+    SBTreePositionCache& updTreePositionCache(const State& s) const { // mutable
+        return Value<SBTreePositionCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.treePositionCacheIndex))
+            .upd();
     }
 
     const SBConstrainedPositionCache& getConstrainedPositionCache(const State& s) const {
-        return Value<SBConstrainedPositionCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.constrainedPositionCacheIndex)).get();
+        return Value<SBConstrainedPositionCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.constrainedPositionCacheIndex))
+            .get();
     }
-    SBConstrainedPositionCache& updConstrainedPositionCache(const State& s) const { //mutable
-        return Value<SBConstrainedPositionCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.constrainedPositionCacheIndex)).upd();
+    SBConstrainedPositionCache& updConstrainedPositionCache(const State& s) const { // mutable
+        return Value<SBConstrainedPositionCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.constrainedPositionCacheIndex))
+            .upd();
     }
 
     const SBCompositeBodyInertiaCache& getCompositeBodyInertiaCache(const State& s) const {
-        return Value<SBCompositeBodyInertiaCache>::downcast
-            (getCacheEntry(s,topologyCache.compositeBodyInertiaCacheIndex));
+        return Value<SBCompositeBodyInertiaCache>::downcast(
+            getCacheEntry(s, topologyCache.compositeBodyInertiaCacheIndex));
     }
-    SBCompositeBodyInertiaCache& updCompositeBodyInertiaCache(const State& s) const { //mutable
-        return Value<SBCompositeBodyInertiaCache>::updDowncast
-            (updCacheEntry(s,topologyCache.compositeBodyInertiaCacheIndex));
+    SBCompositeBodyInertiaCache& updCompositeBodyInertiaCache(const State& s) const { // mutable
+        return Value<SBCompositeBodyInertiaCache>::updDowncast(
+            updCacheEntry(s, topologyCache.compositeBodyInertiaCacheIndex));
     }
 
     const SBArticulatedBodyInertiaCache& getArticulatedBodyInertiaCache(const State& s) const {
-        return Value<SBArticulatedBodyInertiaCache>::downcast
-            (getCacheEntry(s,topologyCache.articulatedBodyInertiaCacheIndex));
+        return Value<SBArticulatedBodyInertiaCache>::downcast(
+            getCacheEntry(s, topologyCache.articulatedBodyInertiaCacheIndex));
     }
-    SBArticulatedBodyInertiaCache& updArticulatedBodyInertiaCache(const State& s) const { //mutable
-        return Value<SBArticulatedBodyInertiaCache>::updDowncast
-            (updCacheEntry(s,topologyCache.articulatedBodyInertiaCacheIndex));
+    SBArticulatedBodyInertiaCache& updArticulatedBodyInertiaCache(const State& s) const { // mutable
+        return Value<SBArticulatedBodyInertiaCache>::updDowncast(
+            updCacheEntry(s, topologyCache.articulatedBodyInertiaCacheIndex));
     }
 
     const SBTreeVelocityCache& getTreeVelocityCache(const State& state) const {
-        return Value<SBTreeVelocityCache>::downcast
-           (state.getCacheEntry(getMySubsystemIndex(),
-                                topologyCache.treeVelocityCacheIndex)).get();
+        return Value<SBTreeVelocityCache>::downcast(
+                   state.getCacheEntry(getMySubsystemIndex(), topologyCache.treeVelocityCacheIndex))
+            .get();
     }
 
-    SBTreeVelocityCache& updTreeVelocityCache(const State& s) const { //mutable
-        return Value<SBTreeVelocityCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.treeVelocityCacheIndex)).upd();
+    SBTreeVelocityCache& updTreeVelocityCache(const State& s) const { // mutable
+        return Value<SBTreeVelocityCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.treeVelocityCacheIndex))
+            .upd();
     }
 
     const SBConstrainedVelocityCache& getConstrainedVelocityCache(const State& s) const {
-        return Value<SBConstrainedVelocityCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.constrainedVelocityCacheIndex)).get();
+        return Value<SBConstrainedVelocityCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.constrainedVelocityCacheIndex))
+            .get();
     }
-    SBConstrainedVelocityCache& updConstrainedVelocityCache(const State& s) const { //mutable
-        return Value<SBConstrainedVelocityCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.constrainedVelocityCacheIndex)).upd();
-    }
-
-    const SBArticulatedBodyVelocityCache& 
-    getArticulatedBodyVelocityCache(const State& state) const {
-        return Value<SBArticulatedBodyVelocityCache>::downcast
-           (state.getCacheEntry(getMySubsystemIndex(),
-                topologyCache.articulatedBodyVelocityCacheIndex)).get();
+    SBConstrainedVelocityCache& updConstrainedVelocityCache(const State& s) const { // mutable
+        return Value<SBConstrainedVelocityCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.constrainedVelocityCacheIndex))
+            .upd();
     }
 
-    SBArticulatedBodyVelocityCache& 
-    updArticulatedBodyVelocityCache(const State& state) const { //mutable
-        return Value<SBArticulatedBodyVelocityCache>::updDowncast
-            (state.updCacheEntry(getMySubsystemIndex(),
-                topologyCache.articulatedBodyVelocityCacheIndex)).upd();
+    const SBArticulatedBodyVelocityCache& getArticulatedBodyVelocityCache(const State& state) const {
+        return Value<SBArticulatedBodyVelocityCache>::downcast(
+                   state.getCacheEntry(getMySubsystemIndex(),
+                                       topologyCache.articulatedBodyVelocityCacheIndex))
+            .get();
     }
 
-    const SBDynamicsCache& getDynamicsCache(const State& s, bool realizingDynamics=false) const {
-        const AbstractValue& cacheEntry = 
-            realizingDynamics ? (const AbstractValue&)s.updCacheEntry(getMySubsystemIndex(),topologyCache.dynamicsCacheIndex)
-                              : s.getCacheEntry(getMySubsystemIndex(),topologyCache.dynamicsCacheIndex);
+    SBArticulatedBodyVelocityCache& updArticulatedBodyVelocityCache(const State& state) const { // mutable
+        return Value<SBArticulatedBodyVelocityCache>::updDowncast(
+                   state.updCacheEntry(getMySubsystemIndex(),
+                                       topologyCache.articulatedBodyVelocityCacheIndex))
+            .upd();
+    }
+
+    const SBDynamicsCache& getDynamicsCache(const State& s, bool realizingDynamics = false) const {
+        const AbstractValue& cacheEntry =
+            realizingDynamics ? (const AbstractValue&)s.updCacheEntry(getMySubsystemIndex(),
+                                                                      topologyCache.dynamicsCacheIndex)
+                              : s.getCacheEntry(getMySubsystemIndex(), topologyCache.dynamicsCacheIndex);
         return Value<SBDynamicsCache>::downcast(cacheEntry).get();
     }
-    SBDynamicsCache& updDynamicsCache(const State& s) const { //mutable
-        return Value<SBDynamicsCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.dynamicsCacheIndex)).upd();
+    SBDynamicsCache& updDynamicsCache(const State& s) const { // mutable
+        return Value<SBDynamicsCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.dynamicsCacheIndex))
+            .upd();
     }
 
     const SBTreeAccelerationCache& getTreeAccelerationCache(const State& s) const {
-        return Value<SBTreeAccelerationCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.treeAccelerationCacheIndex)).get();
+        return Value<SBTreeAccelerationCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.treeAccelerationCacheIndex))
+            .get();
     }
-    SBTreeAccelerationCache& updTreeAccelerationCache(const State& s) const { //mutable
-        return Value<SBTreeAccelerationCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.treeAccelerationCacheIndex)).upd();
+    SBTreeAccelerationCache& updTreeAccelerationCache(const State& s) const { // mutable
+        return Value<SBTreeAccelerationCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.treeAccelerationCacheIndex))
+            .upd();
     }
 
     const SBConstrainedAccelerationCache& getConstrainedAccelerationCache(const State& s) const {
-        return Value<SBConstrainedAccelerationCache>::downcast
-            (s.getCacheEntry(getMySubsystemIndex(),topologyCache.constrainedAccelerationCacheIndex)).get();
+        return Value<SBConstrainedAccelerationCache>::downcast(
+                   s.getCacheEntry(getMySubsystemIndex(), topologyCache.constrainedAccelerationCacheIndex))
+            .get();
     }
-    SBConstrainedAccelerationCache& updConstrainedAccelerationCache(const State& s) const { //mutable
-        return Value<SBConstrainedAccelerationCache>::updDowncast
-            (s.updCacheEntry(getMySubsystemIndex(),topologyCache.constrainedAccelerationCacheIndex)).upd();
+    SBConstrainedAccelerationCache& updConstrainedAccelerationCache(const State& s) const { // mutable
+        return Value<SBConstrainedAccelerationCache>::updDowncast(
+                   s.updCacheEntry(getMySubsystemIndex(), topologyCache.constrainedAccelerationCacheIndex))
+            .upd();
     }
 
 
     const SBModelVars& getModelVars(const State& s) const {
-        return Value<SBModelVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),topologyCache.modelingVarsIndex)).get();
+        return Value<SBModelVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), topologyCache.modelingVarsIndex))
+            .get();
     }
     SBModelVars& updModelVars(State& s) const {
-        return Value<SBModelVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),topologyCache.modelingVarsIndex)).upd();
+        return Value<SBModelVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), topologyCache.modelingVarsIndex))
+            .upd();
     }
 
     const SBInstanceVars& getInstanceVars(const State& s) const {
-        return Value<SBInstanceVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),topologyCache.topoInstanceVarsIndex)).get();
+        return Value<SBInstanceVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), topologyCache.topoInstanceVarsIndex))
+            .get();
     }
     SBInstanceVars& updInstanceVars(State& s) const {
-        return Value<SBInstanceVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),topologyCache.topoInstanceVarsIndex)).upd();
+        return Value<SBInstanceVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), topologyCache.topoInstanceVarsIndex))
+            .upd();
     }
 
     const SBTimeVars& getTimeVars(const State& s) const {
-        return Value<SBTimeVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),getModelCache(s).timeVarsIndex)).get();
+        return Value<SBTimeVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), getModelCache(s).timeVarsIndex))
+            .get();
     }
     SBTimeVars& updTimeVars(State& s) const {
-        return Value<SBTimeVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),getModelCache(s).timeVarsIndex)).upd();
+        return Value<SBTimeVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), getModelCache(s).timeVarsIndex))
+            .upd();
     }
 
     const SBPositionVars& getPositionVars(const State& s) const {
-        return Value<SBPositionVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),getModelCache(s).qVarsIndex)).get();
+        return Value<SBPositionVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), getModelCache(s).qVarsIndex))
+            .get();
     }
     SBPositionVars& updPositionVars(State& s) const {
-        return Value<SBPositionVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),getModelCache(s).qVarsIndex)).upd();
+        return Value<SBPositionVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), getModelCache(s).qVarsIndex))
+            .upd();
     }
 
     const SBVelocityVars& getVelocityVars(const State& s) const {
-        return Value<SBVelocityVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),getModelCache(s).uVarsIndex)).get();
+        return Value<SBVelocityVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), getModelCache(s).uVarsIndex))
+            .get();
     }
     SBVelocityVars& updVelocityVars(State& s) const {
-        return Value<SBVelocityVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),getModelCache(s).uVarsIndex)).upd();
+        return Value<SBVelocityVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), getModelCache(s).uVarsIndex))
+            .upd();
     }
 
     const SBDynamicsVars& getDynamicsVars(const State& s) const {
-        return Value<SBDynamicsVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),getModelCache(s).dynamicsVarsIndex)).get();
+        return Value<SBDynamicsVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), getModelCache(s).dynamicsVarsIndex))
+            .get();
     }
     SBDynamicsVars& updDynamicsVars(State& s) const {
-        return Value<SBDynamicsVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),getModelCache(s).dynamicsVarsIndex)).upd();
+        return Value<SBDynamicsVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), getModelCache(s).dynamicsVarsIndex))
+            .upd();
     }
 
     const SBAccelerationVars& getAccelerationVars(const State& s) const {
-        return Value<SBAccelerationVars>::downcast
-            (s.getDiscreteVariable(getMySubsystemIndex(),getModelCache(s).accelerationVarsIndex)).get();
+        return Value<SBAccelerationVars>::downcast(
+                   s.getDiscreteVariable(getMySubsystemIndex(), getModelCache(s).accelerationVarsIndex))
+            .get();
     }
     SBAccelerationVars& updAccelerationVars(State& s) const {
-        return Value<SBAccelerationVars>::updDowncast
-            (s.updDiscreteVariable(getMySubsystemIndex(),getModelCache(s).accelerationVarsIndex)).upd();
+        return Value<SBAccelerationVars>::updDowncast(
+                   s.updDiscreteVariable(getMySubsystemIndex(), getModelCache(s).accelerationVarsIndex))
+            .upd();
     }
 
-    const SimbodyMatterSubsystem& getMySimbodyMatterSubsystemHandle() const 
-    {   return SimbodyMatterSubsystem::downcast(getOwnerSubsystemHandle()); }
-    SimbodyMatterSubsystem& updMySimbodyMatterSubsystemHandle() 
-    {   return SimbodyMatterSubsystem::updDowncast(updOwnerSubsystemHandle()); }
+    const SimbodyMatterSubsystem& getMySimbodyMatterSubsystemHandle() const {
+        return SimbodyMatterSubsystem::downcast(getOwnerSubsystemHandle());
+    }
+    SimbodyMatterSubsystem& updMySimbodyMatterSubsystemHandle() {
+        return SimbodyMatterSubsystem::updDowncast(updOwnerSubsystemHandle());
+    }
     bool getShowDefaultGeometry() const;
     void setShowDefaultGeometry(bool show);
 
-    void calcTreeForwardDynamicsOperator(const State&,
-        const Vector&                   mobilityForces,
-        const Vector_<Vec3>&            particleForces,
-        const Vector_<SpatialVec>&      bodyForces,
-        const Vector*                   extraMobilityForces,
-        const Vector_<SpatialVec>*      extraBodyForces,
-        SBTreeAccelerationCache&        tac,    // kinematics & prescribed forces into here
-        Vector&                         udot,   // in/out (in for prescribed udot)
-        Vector&                         qdotdot,
-        Vector&                         udotErr) const;
+    void
+    calcTreeForwardDynamicsOperator(const State&,
+                                    const Vector& mobilityForces,
+                                    const Vector_<Vec3>& particleForces,
+                                    const Vector_<SpatialVec>& bodyForces,
+                                    const Vector* extraMobilityForces,
+                                    const Vector_<SpatialVec>* extraBodyForces,
+                                    SBTreeAccelerationCache& tac, // kinematics & prescribed forces into here
+                                    Vector& udot,                 // in/out (in for prescribed udot)
+                                    Vector& qdotdot,
+                                    Vector& udotErr) const;
 
-    void calcLoopForwardDynamicsOperator(const State&, 
-        const Vector&                   mobilityForces,
-        const Vector_<Vec3>&            particleForces,
-        const Vector_<SpatialVec>&      bodyForces,
-        SBTreeAccelerationCache&        tac,    // kinematics & prescribed forces into here
-        SBConstrainedAccelerationCache& cac,    // constraint forces go here
-        Vector&                         udot,   // in/out (in for prescribed udot)
-        Vector&                         qdotdot,
-        Vector&                         multipliers,
-        Vector&                         udotErr) const;
+    void
+    calcLoopForwardDynamicsOperator(const State&,
+                                    const Vector& mobilityForces,
+                                    const Vector_<Vec3>& particleForces,
+                                    const Vector_<SpatialVec>& bodyForces,
+                                    SBTreeAccelerationCache& tac, // kinematics & prescribed forces into here
+                                    SBConstrainedAccelerationCache& cac, // constraint forces go here
+                                    Vector& udot,                        // in/out (in for prescribed udot)
+                                    Vector& qdotdot,
+                                    Vector& multipliers,
+                                    Vector& udotErr) const;
 
     // Given a set of forces, calculate accelerations ignoring
-    // constraints, and leave the results in the state cache. 
+    // constraints, and leave the results in the state cache.
     // Must have already called realizeDynamics().
     // We also allow some extra forces to be supplied, with the intent
     // that these will be used to deal with internal forces generated
     // by constraints; set the pointers to zero if you don't have any
     // extras to pass in.
-    void realizeTreeForwardDynamics (const State& s,
-        const Vector&              mobilityForces,
-        const Vector_<Vec3>&       particleForces,
-        const Vector_<SpatialVec>& bodyForces,
-        const Vector*              extraMobilityForces,
-        const Vector_<SpatialVec>* extraBodyForces) const;
+    void realizeTreeForwardDynamics(const State& s,
+                                    const Vector& mobilityForces,
+                                    const Vector_<Vec3>& particleForces,
+                                    const Vector_<SpatialVec>& bodyForces,
+                                    const Vector* extraMobilityForces,
+                                    const Vector_<SpatialVec>* extraBodyForces) const;
 
     // Given a set of forces, calculate acclerations resulting from
-    // those forces and enforcement of acceleration constraints, and update 
+    // those forces and enforcement of acceleration constraints, and update
     // the state cache with the results.
     void realizeLoopForwardDynamics(const State&,
-        const Vector&              mobilityForces,
-        const Vector_<Vec3>&       particleForces,
-        const Vector_<SpatialVec>& bodyForces) const;
+                                    const Vector& mobilityForces,
+                                    const Vector_<Vec3>& particleForces,
+                                    const Vector_<SpatialVec>& bodyForces) const;
 
     // calc ~(Tp Pq Wq^-1)_r (nfq X mp)
-    void calcWeightedPqrTranspose(   
-        const State&     state,
-        const Vector&    Tp,    // 1/perr tols
-        const Vector&    Wqinv, // 1/q weights
-        Matrix&          Pqrt) const;
+    void calcWeightedPqrTranspose(const State& state,
+                                  const Vector& Tp,    // 1/perr tols
+                                  const Vector& Wqinv, // 1/q weights
+                                  Matrix& Pqrt) const;
 
     // calc ~(Tp P Wu^-1)
     //       (Tv V Wu^-1)_r (nfu X (mp+mv))
-    void calcWeightedPVrTranspose(
-        const State&     s,
-        const Vector&    Tpv,   // 1/verr tols
-        const Vector&    Wuinv, // 1/u weights
-        Matrix&          PVrt) const;
+    void calcWeightedPVrTranspose(const State& s,
+                                  const Vector& Tpv,   // 1/verr tols
+                                  const Vector& Wuinv, // 1/u weights
+                                  Matrix& PVrt) const;
 
     const Array_<QIndex>& getFreeQIndex(const State& state) const;
     const Array_<QIndex>& getPresQIndex(const State& state) const;
@@ -1318,14 +1339,12 @@ public:
 
     // Output must already be sized for number of free q's nfq.
     // Input must be size nq.
-    void packFreeQ(const State& s, const Vector& allQ,
-                   Vector& packedFreeQ) const;
+    void packFreeQ(const State& s, const Vector& allQ, Vector& packedFreeQ) const;
 
     // For efficiency, you must provide an output array of the right size nq.
     // This method *will not* touch the prescribed slots in the output so
     // if you want them zero make sure you do it yourself.
-    void unpackFreeQ(const State& s, const Vector& packedFreeQ,
-                     Vector& unpackedFreeQ) const;
+    void unpackFreeQ(const State& s, const Vector& packedFreeQ, Vector& unpackedFreeQ) const;
 
     // Given a q-like array with nq entries, write zeroes onto the entries
     // corresponding to known (prescribed) q's. The result looks like
@@ -1334,14 +1353,12 @@ public:
 
     // Output must already be sized for number of free u's nfu.
     // Input must be size nu.
-    void packFreeU(const State& s, const Vector& allU,
-                   Vector& packedFreeU) const;
+    void packFreeU(const State& s, const Vector& allU, Vector& packedFreeU) const;
 
     // For efficiency, you must provide an output array of the right size nu.
     // This method *will not* touch the prescribed slots in the output so
     // if you want them zero make sure you do it yourself.
-    void unpackFreeU(const State& s, const Vector& packedFreeU,
-                     Vector& unpackedFreeU) const;
+    void unpackFreeU(const State& s, const Vector& packedFreeU, Vector& unpackedFreeU) const;
 
     // Given a u-like array with nu entries, write zeroes onto the entries
     // corresponding to known (prescribed) u's. The result looks like
@@ -1352,35 +1369,38 @@ public:
     friend class SimTK::SimbodyMatterSubsystem;
 
     struct RigidBodyNodeIndex {
-        RigidBodyNodeIndex(int l, int o) : level(l), offset(o) { }
+        RigidBodyNodeIndex(int l, int o)
+            : level(l)
+            , offset(o) {
+        }
         int level, offset;
     };
 
     SimTK_DOWNCAST(SimbodyMatterSubsystemRep, Subsystem::Guts);
 
-private:
-        // TOPOLOGY "STATE VARIABLES"
+    private:
+    // TOPOLOGY "STATE VARIABLES"
 
     void clearTopologyState(); // note that this requires non-const access
 
     // The handles in this array are the owners of the MobilizedBodies after they
     // are adopted. The MobilizedBodyIndex (converted to int) is the index of a
     // MobilizedBody in this array.
-    Array_<MobilizedBody*,MobilizedBodyIndex>               mobilizedBodies;
+    Array_<MobilizedBody*, MobilizedBodyIndex> mobilizedBodies;
     // Constraints are treated similarly.
-    Array_<Constraint*,ConstraintIndex>                     constraints;
+    Array_<Constraint*, ConstraintIndex> constraints;
 
-    Array_<UnilateralContact*,UnilateralContactIndex>       uniContacts;
-    Array_<StateLimitedFriction*,StateLimitedFrictionIndex> stateLtdFriction;
+    Array_<UnilateralContact*, UnilateralContactIndex> uniContacts;
+    Array_<StateLimitedFriction*, StateLimitedFrictionIndex> stateLtdFriction;
 
     // Our realizeTopology method calls this after all bodies & constraints have been added,
     // to construct part of the topology cache below.
     void endConstruction(State&);
-    
-        // TOPOLOGY CACHE
+
+    // TOPOLOGY CACHE
 
     // The data members here are filled in when realizeTopology() is called.
-    // The flag which remembers whether we have realized topology is in 
+    // The flag which remembers whether we have realized topology is in
     // the Subsystem::Guts base class.
     // Note that a cache is treated as mutable, so the methods that manipulate
     // it are const.
@@ -1393,21 +1413,23 @@ private:
     // This method should clear out all the data members below.
     void clearTopologyCache();
 
-        // Mobilized bodies and their rigid body nodes
+    // Mobilized bodies and their rigid body nodes
 
     // This holds pointers to nodes and serves to map (level,offset) to nodeNum.
-    Array_<RBNodePtrList>      rbNodeLevels;
-    // Map nodeNum (a.k.a. MobilizedBodyIndex) to (level,offset).
-    Array_<RigidBodyNodeIndex,MobilizedBodyIndex> nodeNum2NodeMap;
+    Array_<RBNodePtrList> rbNodeLevels;
+    // std::vector<std::vector<NodeVariant>> rbNodeLevelsDOD;
 
-        // Constraints
+    // Map nodeNum (a.k.a. MobilizedBodyIndex) to (level,offset).
+    Array_<RigidBodyNodeIndex, MobilizedBodyIndex> nodeNum2NodeMap;
+
+    // Constraints
 
     // Here we sort the above constraints by branch (ancestor's base body), then by
     // level within that branch. That is, each constraint is addressed
     // by three indices [branch][levelOfAncestor][offset]
     // where offset is an arbitrary unique integer assigned to all
     // the constraints on the same branch with the same level of ancestor.
-    Array_< Array_< Array_<ConstraintIndex> > > branches;
+    Array_<Array_<Array_<ConstraintIndex>>> branches;
 
     // Partition the constraints into groups which are coupled by constraints at
     // the indicated level. Only Constraints which generate holonomic constraint
@@ -1432,7 +1454,7 @@ private:
     // bodies' inboard paths share a body other than ground. That is, we couple
     // the constraints unless they involve completely disjoint grounded subtrees.
     // These groups correspond to disjoint blocks in M (as
-    // well as G, of course), so we can decouple them for the (G M^-1 G^T) 
+    // well as G, of course), so we can decouple them for the (G M^-1 G^T)
     // calculation.
     // TODO: acceleration constraints should instead be dealt with recursively,
     // based on *kinematic* coupling; where the kinematically coupled groups are
@@ -1446,9 +1468,9 @@ private:
 
     // Initialize to 0 at beginning of construction. These are for doling
     // out Q & U state variables to the nodes.
-    UIndex        nextUSlot;
+    UIndex nextUSlot;
     USquaredIndex nextUSqSlot;
-    QIndex        nextQSlot;
+    QIndex nextQSlot;
 
     // These are similarly for doling out slots for *topological* constraint
     // equations for position errors, velocity errors, and multipliers.
@@ -1469,7 +1491,7 @@ private:
 
     SBTopologyCache topologyCache;
     CacheEntryIndex topologyCacheIndex; // topologyCache is copied here in the State
-    
+
     // Specifies whether default decorative geometry should be shown.
     bool showDefaultGeometry;
 };

@@ -132,9 +132,9 @@ bool VerletIntegratorRep::attemptDAEStep(Real t1, Vector& yErrEst, int& errOrder
         advanced.updU() = u1_est; // u's and z's will change in advanced below
         advanced.updZ() = z1_est;
 
-        system.realize(advanced, Stage::Time);
+        system.realize(advanced, Stage::Time); // no dumm
         system.prescribeQ(advanced);
-        system.realize(advanced, Stage::Position);
+        system.realize(advanced, Stage::Position); // realize position
 
         // Consider position constraint projection. (See AbstractIntegratorRep
         // for how we decide not to project.)
@@ -149,13 +149,13 @@ bool VerletIntegratorRep::attemptDAEStep(Real t1, Vector& yErrEst, int& errOrder
         // q is now at its final integrated, prescribed, and projected value.
         // u and z still need refinement.
 
-        system.prescribeU(advanced);
-        system.realize(advanced, Stage::Velocity);
+        system.prescribeU(advanced);               // no dumm
+        system.realize(advanced, Stage::Velocity); // realizeSubsystemVelocityImpl -> 0
 
         // No u projection yet.
 
         // Get new values for the derivatives.
-        realizeStateDerivatives(advanced);
+        realizeStateDerivatives(advanced); // dynamics + forces
 
         // We're going to integrate the u's and z's with the 2nd order implicit
         // trapezoid rule: u(t+h) = u(t) + h*(f(u(t))+f(u(t+h)))/2. Unfortunately
@@ -188,12 +188,12 @@ bool VerletIntegratorRep::attemptDAEStep(Real t1, Vector& yErrEst, int& errOrder
 
             // Fix prescribed u's which may have been changed here.
             system.prescribeU(advanced);
-            system.realize(advanced, Stage::Velocity);
+            system.realize(advanced, Stage::Velocity); // realizeSubsystemVelocityImpl -> 0
 
             // No projection yet.
 
             // Calculate fresh derivatives UDot and ZDot.
-            realizeStateDerivatives(advanced);
+            realizeStateDerivatives(advanced); // dynamics + no forces
 
             // Calculate convergence as the ratio of the norm of the last delta to
             // the norm of the values prior to the last change. We're using the
