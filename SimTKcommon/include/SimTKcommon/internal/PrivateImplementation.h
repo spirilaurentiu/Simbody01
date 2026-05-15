@@ -25,12 +25,12 @@
  * -------------------------------------------------------------------------- */
 
 /**@file
- * This header provides declarations of the user-visible portion of the 
+ * This header provides declarations of the user-visible portion of the
  * PIMPLHandle template classes that are used in the SimTK Core to implement
  * the PIMPL (private implementation) design pattern.
  *
  * The definitions associated with these template method declarations are
- * separated into the companion header file PrivateImplementation_Defs.h 
+ * separated into the companion header file PrivateImplementation_Defs.h
  * with the intent that those definitions will be visible only in library-side
  * code where they need to be instantiated. The definition header file is
  * available for end users as part of the SimTK Core installation, but is
@@ -42,11 +42,11 @@
  * private, library-side code.
  */
 
-#include "SimTKcommon/internal/common.h"
-#include "SimTKcommon/internal/ExceptionMacros.h"
-
 #include <cassert>
 #include <iosfwd>
+
+#include "SimTKcommon/internal/ExceptionMacros.h"
+#include "SimTKcommon/internal/common.h"
 
 namespace SimTK {
 
@@ -56,7 +56,7 @@ namespace SimTK {
  * Implementation (PIMPL) classes. These consist of a "handle" class and
  * an "implementation" class. The handle contains only a single pointer,
  * which points to the implementation class whose definition is unknown
- * to the SimTK client. The implementation class has a pointer back to 
+ * to the SimTK client. The implementation class has a pointer back to
  * *one* of the handles that points to it -- that one is called the "owner
  * handle" and is the only one which will delete the implementation object
  * when the handle is deleted or goes out of scope. All other handles are
@@ -70,14 +70,14 @@ namespace SimTK {
  *
  * By the time of instantiation, we must have a definition for the IMPL
  * class supplied to the templatized base class. We expect that the IMPL
- * class will be derived from PIMPLImplementation declared below. We 
+ * class will be derived from PIMPLImplementation declared below. We
  * also expect to find certain methods defined, with these names and
  * meanings:
- * 
+ *
  *     IMPL* IMPL::clone() const
  *        This creates an implementation object identical to the one
- *        we have, except that its owner handle is set to null. We 
- *        expect the owner handle to be filled in by the derived 
+ *        we have, except that its owner handle is set to null. We
+ *        expect the owner handle to be filled in by the derived
  *        Handle class, which should have initiated the PIMPLHandle
  *        operation which had the need to clone().
  *
@@ -102,25 +102,27 @@ namespace SimTK {
  * and pointer semantics owner handles can't be the target of an
  * assignment.
  */
-template <class HANDLE, class IMPL, bool PTR=false> 
+template <class HANDLE, class IMPL, bool PTR = false>
 class PIMPLHandle {
-private:
-    /// This is the only data member allowed in a handle class. It is 
+    private:
+    /// This is the only data member allowed in a handle class. It is
     /// guaranteed to stay this way for eternity. That is, a well-formed
     /// SimTK Core handle class is just a pointer; and this fact may be
     /// depended upon when necessary.
-    IMPL *impl;
+    IMPL* impl;
 
-public:
+    public:
     typedef PIMPLHandle<HANDLE, IMPL, PTR> HandleBase;
-    typedef HandleBase                     ParentHandle;
+    typedef HandleBase ParentHandle;
 
     /// Returns true if this handle is empty, that is, does not refer
     /// to any implementation object.
-    bool isEmptyHandle() const {return impl==0;}
+    bool isEmptyHandle() const {
+        return impl == 0;
+    }
 
     /// Returns true if this handle is the owner of the implementation
-    /// object to which it refers. An empty handle is <em>not</em> 
+    /// object to which it refers. An empty handle is <em>not</em>
     /// considered by this method to be an owner. You can check for an
     /// empty handle using isEmptyHandle().
     /// @see isEmptyHandle()
@@ -132,7 +134,7 @@ public:
 
     /// Give up ownership of the implementation to an empty handle. The
     /// current handle retains a reference to the implementation but is
-    /// no longer its owner. This method requires the current handle to 
+    /// no longer its owner. This method requires the current handle to
     /// be an owner, and the supplied handle to be empty.
     void disown(HANDLE& newOwner);
 
@@ -170,29 +172,37 @@ public:
 
     /// Get a const reference to the implementation associated with this Handle.
     /// This will throw an exception if there is no implementation.
-    const IMPL& getImpl() const {assert(!isEmptyHandle()); return *impl;}
+    const IMPL& getImpl() const {
+        assert(!isEmptyHandle());
+        return *impl;
+    }
 
     /// Get a writable reference to the implementation associated with this Handle.
     /// Note that this requires writable access to the handle also. This will
     /// throw an exception if there is no implementation.
-    IMPL& updImpl() {assert(!isEmptyHandle()); return *impl;}
+    IMPL& updImpl() {
+        assert(!isEmptyHandle());
+        return *impl;
+    }
 
     /// Return the number of handles the implementation believes are referencing it.
     /// Throws an exception if there is no implementation.
     /// This is for degugging and consistency checking and shouldn't normally be used.
     int getImplHandleCount() const;
 
-protected:
+    protected:
     /// The default constructor makes this an empty handle.
-    PIMPLHandle() : impl(0) {}
+    PIMPLHandle()
+        : impl(0) {
+    }
 
-    /// This provides consruction of a handle referencing an existing 
+    /// This provides consruction of a handle referencing an existing
     /// implementation object. If the supplied pointer is null the result is
     /// the same as the default constructor.
     explicit PIMPLHandle(IMPL* p);
 
     /// Note that the destructor is non-virtual. This is a concrete class and so
-    /// should be all the handle classes derived from it. If this handle is the 
+    /// should be all the handle classes derived from it. If this handle is the
     /// owner of its implementation, the destructor will destroy the implementation
     /// object as well. Any other handles referencing the same implementation will
     /// then be invalid, although there will be automated detection of that. Be very
@@ -230,16 +240,20 @@ protected:
     /// object as is referenced by "this" PIMPLHandle.
     bool hasSameImplementation(const HANDLE& other) const;
 
-private:
-    const HANDLE& downcastToHandle() const {return static_cast<const HANDLE&>(*this);}
-    HANDLE& updDowncastToHandle() {return static_cast<HANDLE&>(*this);}
+    private:
+    const HANDLE& downcastToHandle() const {
+        return static_cast<const HANDLE&>(*this);
+    }
+    HANDLE& updDowncastToHandle() {
+        return static_cast<HANDLE&>(*this);
+    }
 };
 
 /**
- * This class provides some infrastructure useful in creating PIMPL 
+ * This class provides some infrastructure useful in creating PIMPL
  * Implementation classes (the ones referred to by Handles). Note that
  * this class is used by SimTK Core code ONLY on the library side; it never
- * appears in headers intended for use by clients. However it is 
+ * appears in headers intended for use by clients. However it is
  * generally useful enough that we include it here to assist people
  * who would like to make their own PIMPL classes. Consequently, there
  * are no binary compatibility issues raised by the exposure of data
@@ -248,8 +262,8 @@ private:
  * the library code will change but it will be using the updated definition
  * and does not have to coordinate in any way with client code.
  *
- * Other users of this class should be aware that if you include it in 
- * code you expose to your own users you may create binary compatibility 
+ * Other users of this class should be aware that if you include it in
+ * code you expose to your own users you may create binary compatibility
  * problems for yourself. Better to restrict use of this class (and indeed
  * inclusion of this header file) to your private ".cpp" source code and
  * not in your API header files.
@@ -261,17 +275,17 @@ private:
  * so special handling is required if the owner handle is deleted while
  * other references still exist.
  */
-template <class HANDLE, class IMPL> 
+template <class HANDLE, class IMPL>
 class PIMPLImplementation {
-    HANDLE*     ownerHandle;
-    mutable int handleCount; // ref count determining when this is destructed 
-public:
+    HANDLE* ownerHandle;
+    mutable int handleCount; // ref count determining when this is destructed
+    public:
     /// This serves as a default constructor and as a way to construct
     /// an implementation class which already knows its owner handle.
     /// If the handle is supplied then the handle count is set to one.
-    /// If not (default constructor) owner handle is null and the 
+    /// If not (default constructor) owner handle is null and the
     /// handle count at 0.
-    explicit PIMPLImplementation(HANDLE* h=0);
+    explicit PIMPLImplementation(HANDLE* h = 0);
 
     /// Get the number of handles known to be referencing this implementation.
     int getHandleCount() const;
@@ -287,20 +301,20 @@ public:
 
     /// Note that the base class destructor is non-virtual, although it is
     /// expected that derived classes will be abstract. Be sure to provide
-    /// a virtual destructor in any abstract class which is derived from 
+    /// a virtual destructor in any abstract class which is derived from
     /// this base, and be sure to delete a pointer to the abstract class
     /// <em>not</em> a pointer to this base class!
     ~PIMPLImplementation();
 
     /// The copy constructor for the base class makes sure that the
     /// new object has a null owner handle. A derived class must set
-    /// the appropriate owner handle after this is called, that is, in 
+    /// the appropriate owner handle after this is called, that is, in
     /// the <em>body</em> (not the initializer list) of the derived
     /// class's copy constructor. Also the caller must make sure to
     /// increment the handle count.
     PIMPLImplementation(const PIMPLImplementation&);
 
-    /// Copy assignment for the base class just makes sure that the 
+    /// Copy assignment for the base class just makes sure that the
     /// owner handle is not copied, and that the handle count is zero
     /// for the copy. Caller is required to register a handle and increment
     /// the handle counter.
@@ -336,45 +350,45 @@ public:
 };
 
 template <class H, class IMPL, bool PTR>
-std::ostream& operator<<(std::ostream& o, const PIMPLHandle<H,IMPL,PTR>& h);
+std::ostream& operator<<(std::ostream& o, const PIMPLHandle<H, IMPL, PTR>& h);
 
 // This macro declares methods to be included in classes derived from a PIMPLHandle subclass.
 
 #define SimTK_INSERT_DERIVED_HANDLE_DECLARATIONS(DERIVED, DERIVED_IMPL, PARENT) \
-const DERIVED_IMPL& getImpl() const;\
-DERIVED_IMPL& updImpl();\
-const PARENT& upcast() const;\
-PARENT& updUpcast();\
-static bool isInstanceOf(const PARENT& p);\
-static const DERIVED& downcast(const PARENT& p);\
-static DERIVED& updDowncast(PARENT& p);
+    const DERIVED_IMPL& getImpl() const;                                        \
+    DERIVED_IMPL& updImpl();                                                    \
+    const PARENT& upcast() const;                                               \
+    PARENT& updUpcast();                                                        \
+    static bool isInstanceOf(const PARENT& p);                                  \
+    static const DERIVED& downcast(const PARENT& p);                            \
+    static DERIVED& updDowncast(PARENT& p);
 
 // This macro provides the definitions for the above declarations.
 
-#define SimTK_INSERT_DERIVED_HANDLE_DEFINITIONS(DERIVED, DERIVED_IMPL, PARENT) \
-const DERIVED_IMPL& DERIVED::getImpl() const {\
-    return SimTK_DYNAMIC_CAST_DEBUG<const DERIVED_IMPL&>(PARENT::getImpl());\
-}\
-DERIVED_IMPL& DERIVED::updImpl() {\
-    return SimTK_DYNAMIC_CAST_DEBUG<DERIVED_IMPL&>(PARENT::updImpl());\
-}\
-const PARENT& DERIVED::upcast() const {\
-    return static_cast<const PARENT&>(*this);\
-}\
-PARENT& DERIVED::updUpcast() {\
-    return static_cast<PARENT&>(*this);\
-}\
-bool DERIVED::isInstanceOf(const PARENT& p) {\
-    return dynamic_cast<const DERIVED_IMPL*>(&p.getImpl()) != 0;\
-}\
-const DERIVED& DERIVED::downcast(const PARENT& p) {\
-    assert(isInstanceOf(p));\
-    return static_cast<const DERIVED&>(p);\
-}\
-DERIVED& DERIVED::updDowncast(PARENT& p) {\
-    assert(isInstanceOf(p));\
-    return static_cast<DERIVED&>(p);\
-}\
+#define SimTK_INSERT_DERIVED_HANDLE_DEFINITIONS(DERIVED, DERIVED_IMPL, PARENT)   \
+    const DERIVED_IMPL& DERIVED::getImpl() const {                               \
+        return SimTK_DYNAMIC_CAST_DEBUG<const DERIVED_IMPL&>(PARENT::getImpl()); \
+    }                                                                            \
+    DERIVED_IMPL& DERIVED::updImpl() {                                           \
+        return SimTK_DYNAMIC_CAST_DEBUG<DERIVED_IMPL&>(PARENT::updImpl());       \
+    }                                                                            \
+    const PARENT& DERIVED::upcast() const {                                      \
+        return static_cast<const PARENT&>(*this);                                \
+    }                                                                            \
+    PARENT& DERIVED::updUpcast() {                                               \
+        return static_cast<PARENT&>(*this);                                      \
+    }                                                                            \
+    bool DERIVED::isInstanceOf(const PARENT& p) {                                \
+        return dynamic_cast<const DERIVED_IMPL*>(&p.getImpl()) != 0;             \
+    }                                                                            \
+    const DERIVED& DERIVED::downcast(const PARENT& p) {                          \
+        assert(isInstanceOf(p));                                                 \
+        return static_cast<const DERIVED&>(p);                                   \
+    }                                                                            \
+    DERIVED& DERIVED::updDowncast(PARENT& p) {                                   \
+        assert(isInstanceOf(p));                                                 \
+        return static_cast<DERIVED&>(p);                                         \
+    }
 
 } // namespace SimTK
 

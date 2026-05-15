@@ -28,19 +28,153 @@
  * to compute efficiently.
  */
 
-#include "SimbodyMatterSubsystemRep.h"
 #include "RigidBodyNode.h"
+
 #include "RigidBodyNodeSpec.h"
+#include "SimbodyMatterSubsystemRep.h"
 
 
 //////////////////////////////////////////////
 // Implementation of RigidBodyNode methods. //
 //////////////////////////////////////////////
 
-void RigidBodyNode::addChild(RigidBodyNode* child) {
-    children.push_back( child );
+auto RigidBodyNode::type() const -> const char* {
+    return "unknown";
 }
 
+void RigidBodyNode::calcAcrossJointTransform(const SBStateDigest& sbs,
+                                             const Real* q,
+                                             int nq,
+                                             Transform& X_F0M0) const {
+    const int poolz = getQPoolSize(sbs.getModelCache());
+    Real* qPool = poolz ? new Real[poolz] : 0;
+    Real qErr;
+    const int nQErr = isQuaternionInUse(sbs.getModelCache()) ? 1 : 0;
+    performQPrecalculations(sbs, q, nq, qPool, poolz, &qErr, nQErr);
+    calcX_FM(sbs, q, nq, qPool, poolz, X_F0M0);
+    delete[] qPool;
+}
+
+void RigidBodyNode::calcAcrossJointTransform(const SBStateDigest& sbs,
+                                             const Vector& q,
+                                             Transform& X_F0M0) const {
+    const SBModelCache mc = sbs.getModelCache();
+    const int nq = getNumQInUse(mc);
+    const Real* qp = nq ? &q[getFirstQIndex(mc)] : (Real*)0;
+    calcAcrossJointTransform(sbs, qp, nq, X_F0M0);
+}
+
+// This operator pulls N(q) from the StateDigest if necessary and calculates
+// qdot=N(q)*u from the supplied argument. For many mobilizers it
+// can simply copy u to qdot without referencing the state at all.
+void RigidBodyNode::calcQDot(const SBStateDigest&, const Real* u, Real* qdot) const {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcQDot");
+}
+// This operator pulls N(q) and NDot(q,u) from the StateDigest if necessary
+// and calculates qdotdot=N*udot + NDot*u from the supplied argument.
+// For many mobilizers it can simply copy udot to qdotdot without referencing
+// the state at all.
+void RigidBodyNode::calcQDotDot(const SBStateDigest&, const Real* udot, Real* qdotdot) const {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcQDotDot");
+}
+auto RigidBodyNode::calcMobilizerTransformFromQ(const SBStateDigest&, const Real* q) const -> Transform {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcMobilizerTransformFromQ");
+}
+auto RigidBodyNode::calcMobilizerVelocityFromU(const SBStateDigest&, const Real* u) const -> SpatialVec {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcMobilizerVelocityFromU");
+}
+auto RigidBodyNode::calcMobilizerAccelerationFromUDot(const SBStateDigest&, const Real* udot) const
+    -> SpatialVec {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcMobilizerAccelerationFromUDot");
+}
+auto RigidBodyNode::calcParentToChildTransformFromQ(const SBStateDigest&, const Real* q) const -> Transform {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcParentToChildTransformFromQ");
+}
+auto RigidBodyNode::calcParentToChildVelocityFromU(const SBStateDigest&, const Real* u) const -> SpatialVec {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "calcParentToChildVelocityFromU");
+}
+auto RigidBodyNode::calcParentToChildAccelerationFromUDot(const SBStateDigest&, const Real* udot) const
+    -> SpatialVec {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod,
+                 "RigidBodeNode",
+                 "calcParentToChildAccelerationFromUDot");
+}
+
+void RigidBodyNode::convertToEulerAngles(const Vector& inputQ, Vector& outputQ) const {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "convertToEulerAngles");
+};
+// Convert from Euler angle to quaternion representations.
+void RigidBodyNode::convertToQuaternions(const Vector& inputQ, Vector& outputQ) const {
+    SimTK_THROW2(Exception::UnimplementedVirtualMethod, "RigidBodeNode", "convertToQuaternions");
+};
+
+void RigidBodyNode::setQToFitTransform(const SBStateDigest& sbs, const Transform& X_FM, Vector& q) const {
+    setQToFitTransformImpl(sbs, isReversed() ? Transform(~X_FM) : X_FM, q);
+}
+
+void RigidBodyNode::setQToFitRotation(const SBStateDigest& sbs, const Rotation& R_FM, Vector& q) const {
+    setQToFitRotationImpl(sbs, isReversed() ? Rotation(~R_FM) : R_FM, q);
+}
+
+// Reversing a translation requires that we obtain the current orientation,
+// which we'll do assuming there is something meaningful in the rotational
+// part of the q's.
+void RigidBodyNode::setQToFitTranslation(const SBStateDigest& sbs, const Vec3& p_FM, Vector& q) const {
+    if (!isReversed()) {
+        setQToFitTranslationImpl(sbs, p_FM, q);
+        return;
+    }
+
+    Transform X_MF; // note reversal of frames
+    calcAcrossJointTransform(sbs, q, X_MF);
+    setQToFitTranslationImpl(sbs, X_MF.R() * (-p_FM), q);
+}
+
+void RigidBodyNode::setUToFitVelocity(const SBStateDigest& sbs,
+                                      const Vector& q,
+                                      const SpatialVec& V_FM,
+                                      Vector& u) const {
+    if (!isReversed()) {
+        setUToFitVelocityImpl(sbs, q, V_FM, u);
+        return;
+    }
+    Transform X_MF; // note reversal of frames
+    calcAcrossJointTransform(sbs, q, X_MF);
+    setUToFitVelocityImpl(sbs, q, reverseSpatialVelocity(~X_MF, V_FM), u);
+}
+
+void RigidBodyNode::setUToFitAngularVelocity(const SBStateDigest& sbs,
+                                             const Vector& q,
+                                             const Vec3& w_FM,
+                                             Vector& u) const {
+    if (!isReversed()) {
+        setUToFitAngularVelocityImpl(sbs, q, w_FM, u);
+        return;
+    }
+    Transform X_MF; // note reversal of frames
+    calcAcrossJointTransform(sbs, q, X_MF);
+    setUToFitAngularVelocityImpl(sbs, q, reverseAngularVelocity(~X_MF.R(), w_FM), u);
+}
+
+void RigidBodyNode::setUToFitLinearVelocity(const SBStateDigest& sbs,
+                                            const Vector& q,
+                                            const Vec3& v_FM,
+                                            Vector& u) const {
+    if (!isReversed()) {
+        setUToFitLinearVelocityImpl(sbs, q, v_FM, u);
+        return;
+    }
+    Transform X_MF; // note reversal of frames
+    calcAcrossJointTransform(sbs, q, X_MF);
+    // TODO: we have to assume angular velocity is zero here. Should be some
+    //  way to get the joint to compute w_FM.
+    const SpatialVec V_FM(Vec3(0), v_FM);
+    setUToFitLinearVelocityImpl(sbs, q, reverseSpatialVelocity(~X_MF, V_FM)[1], u);
+}
+
+void RigidBodyNode::addChild(RigidBodyNode* child) {
+    children.push_back(child);
+}
 
 
 //==============================================================================
@@ -51,9 +185,7 @@ void RigidBodyNode::addChild(RigidBodyNode* child) {
 // Should be calc'd from base to tip.
 // We depend on transforms X_PB and X_GB being available.
 // Cost is 90 flops.
-void RigidBodyNode::calcJointIndependentKinematicsPos(
-    SBTreePositionCache&    pc) const
-{
+void RigidBodyNode::calcJointIndependentKinematicsPos(SBTreePositionCache& pc) const {
     assert(nodeNum != 0); // Don't call this for Ground.
 
     // Re-express parent-to-child shift vector (Bo-Po) into the ground frame.
@@ -69,11 +201,11 @@ void RigidBodyNode::calcJointIndependentKinematicsPos(
     // spatial inertia matrix Mk.
 
     const Rotation& R_GB = getX_GB(pc).R();
-    const Vec3&     p_GB = getX_GB(pc).p();
+    const Vec3& p_GB = getX_GB(pc).p();
 
     // reexpress inertia in ground (57 flops)
-    const UnitInertia G_Bo_G  = getUnitInertia_OB_B().reexpress(~R_GB);
-    const Vec3        p_BBc_G = R_GB*getCOM_B(); // 15 flops
+    const UnitInertia G_Bo_G = getUnitInertia_OB_B().reexpress(~R_GB);
+    const Vec3 p_BBc_G = R_GB * getCOM_B(); // 15 flops
 
     updCOM_G(pc) = p_GB + p_BBc_G; // 3 flops
 
@@ -84,140 +216,127 @@ void RigidBodyNode::calcJointIndependentKinematicsPos(
 }
 
 
-
 //==============================================================================
 //                   CALC JOINT INDEPENDENT KINEMATICS VEL
 //==============================================================================
-// Calculate velocity-related quantities: spatial velocity (V_GB), 
+// Calculate velocity-related quantities: spatial velocity (V_GB),
 // and coriolis acceleration. This must be
 // called base to tip: depends on parent's spatial velocity, and
 // the just-calculated cross-joint spatial velocity V_PB_G and
 // velocity-dependent acceleration remainder term VD_PB_G.
 // Cost is about 100 flops.
-void 
-RigidBodyNode::calcJointIndependentKinematicsVel(
-    const SBTreePositionCache& pc,
-    SBTreeVelocityCache&       vc) const
-{
+void RigidBodyNode::calcJointIndependentKinematicsVel(const SBTreePositionCache& pc,
+                                                      SBTreeVelocityCache& vc) const {
     assert(nodeNum != 0); // Don't call this for Ground.
 
-    const SpatialVec& V_GP   = parent->getV_GB(vc); // parent P's velocity in G
-    const SpatialVec& V_PB_G = getV_PB_G(vc); // child B's vel in P, exp. in G
-    const PhiMatrixTranspose PhiT = ~getPhi(pc); // shift outwards
+    const SpatialVec& V_GP = parent->getV_GB(vc); // parent P's velocity in G
+    const SpatialVec& V_PB_G = getV_PB_G(vc);     // child B's vel in P, exp. in G
+    const PhiMatrixTranspose PhiT = ~getPhi(pc);  // shift outwards
 
     // calc spatial velocity of B's origin Bo in G (angular,linear)
-    const SpatialVec V_GB = PhiT*V_GP + V_PB_G; // 18 flops
+    const SpatialVec V_GB = PhiT * V_GP + V_PB_G; // 18 flops
     updV_GB(vc) = V_GB;
 
     const Vec3& w_GB = V_GB[0]; // for convenience
     const Vec3& v_GB = V_GB[1];
 
-    // Calculate gyroscopic moment and force b (48 flops). Although this is 
+    // Calculate gyroscopic moment and force b (48 flops). Although this is
     // really a dynamic quantity (requires spatial inertia and is itself
-    // a force), we calculate this here rather than in stage Dynamics because 
-    // it is needed in inverse dynamics but does not require articulated body 
+    // a force), we calculate this here rather than in stage Dynamics because
+    // it is needed in inverse dynamics but does not require articulated body
     // inertias to be calculated. This could be deferred until needed but
     // probably isn't worth the trouble.
-    const SpatialVec b  = getMass() *                       // 6 flops
-        SpatialVec(w_GB % (getUnitInertia_OB_G(pc)*w_GB),   // moment (24 flops)
-                   w_GB % (w_GB % getCB_G(pc)));            // force  (18 flops)   
+    const SpatialVec b = getMass() *                                         // 6 flops
+                         SpatialVec(w_GB % (getUnitInertia_OB_G(pc) * w_GB), // moment (24 flops)
+                                    w_GB % (w_GB % getCB_G(pc)));            // force  (18 flops)
     updGyroscopicForce(vc) = b;
 
     // Parent velocity.
     const Vec3& w_GP = V_GP[0]; // for convenience
     const Vec3& v_GP = V_GP[1];
 
-    // Calculate this mobilizer's incremental contribution to coriolis 
-    // acceleration a, and this body's total coriolis acceleration A (it 
+    // Calculate this mobilizer's incremental contribution to coriolis
+    // acceleration a, and this body's total coriolis acceleration A (it
     // parent's coriolis acceleration plus the incremental contribution).
     //
-    // We just calculated 
-    // (1)  V_GB = J*u = ~Phi * V_GP + H*u 
-    // above. Eventually we will  want to compute 
-    // (2)  A_GB = d/dt V_GB 
+    // We just calculated
+    // (1)  V_GB = J*u = ~Phi * V_GP + H*u
+    // above. Eventually we will  want to compute
+    // (2)  A_GB = d/dt V_GB
     // (3)       = J*udot + Jdot*u
     // (4)       = (~Phi*A_GP + H*udot) + (~Phidot*V_GP+Hdot*u).
     // (Don't be tempted to match the "J" terms in (3) with the two terms in (4)
     // because A_GP already includes coriolis terms up to the parent.)
-    // That second term in (4) is just velocity dependent so we can calculate 
-    // it here. That is what we're calling the "incremental contribution to 
+    // That second term in (4) is just velocity dependent so we can calculate
+    // it here. That is what we're calling the "incremental contribution to
     // coriolis acceleration" of mobilizer B.
     // CAUTION: our definition of H is transposed from Jain's and Schwieters'.
     //
     // So the incremental contribution to the coriolis acceleration is
     //   A = ~PhiDot * V_GP + HDot * u
-    // As correctly calculated in Schwieters' paper, Eq [16], the first term 
-    // above simplifies to SpatialVec( 0, w_GP % (v_GB-v_GP) ). However, 
-    // Schwieters' second term in [16] is correct only if H is constant in P, 
-    // in which case the derivative just accounts for the rotation of P in G. 
-    // In general H is not constant in P, so we don't try to calculate the 
-    // derivative here but assume that HDot*u has already been calculated for 
+    // As correctly calculated in Schwieters' paper, Eq [16], the first term
+    // above simplifies to SpatialVec( 0, w_GP % (v_GB-v_GP) ). However,
+    // Schwieters' second term in [16] is correct only if H is constant in P,
+    // in which case the derivative just accounts for the rotation of P in G.
+    // In general H is not constant in P, so we don't try to calculate the
+    // derivative here but assume that HDot*u has already been calculated for
     // us and stored in VD_PB_G. (That is, V_PB_G = H*u, VD_PB_G = HDot*u.)
     //
     // Note: despite all the ground-relative velocities here, this is just
     // the contribution of the cross-joint velocity, but reexpressed in G.
     const SpatialVec& VD_PB_G = getVD_PB_G(vc);
-    const SpatialVec  A(VD_PB_G[0], 
-                        VD_PB_G[1] + w_GP % (v_GB-v_GP)); // 15 flops
+    const SpatialVec A(VD_PB_G[0],
+                       VD_PB_G[1] + w_GP % (v_GB - v_GP)); // 15 flops
     updMobilizerCoriolisAcceleration(vc) = A;
 
     // Next, the total coriolis acceleration a (normally just called "coriolis
-    // acceleration"!) of body B is the total coriolis acceleration of its 
-    // parent shifted outward, plus B's local contribution A that we just 
+    // acceleration"!) of body B is the total coriolis acceleration of its
+    // parent shifted outward, plus B's local contribution A that we just
     // calculated (18 flops).
-    const SpatialVec a = PhiT * parent->getTotalCoriolisAcceleration(vc) + A;   
+    const SpatialVec a = PhiT * parent->getTotalCoriolisAcceleration(vc) + A;
     updTotalCoriolisAcceleration(vc) = a;
 
-    // Finally, calculate the total of the rotational velocity-dependent forces 
+    // Finally, calculate the total of the rotational velocity-dependent forces
     // acting on this body (45 flops).
-    updTotalCentrifugalForces(vc) =  getMk_G(pc) * a + b;
+    updTotalCentrifugalForces(vc) = getMk_G(pc) * a + b;
 }
-
 
 
 //==============================================================================
 //                          CALC KINETIC ENERGY
 //==============================================================================
 // Cost is 57 flops.
-Real RigidBodyNode::calcKineticEnergy(
-    const SBTreePositionCache& pc,
-    const SBTreeVelocityCache& vc) const 
-{
-    const Real ret = dot(getV_GB(vc) , getMk_G(pc)*getV_GB(vc));
-    return ret/2;
+Real RigidBodyNode::calcKineticEnergy(const SBTreePositionCache& pc, const SBTreeVelocityCache& vc) const {
+    const Real ret = dot(getV_GB(vc), getMk_G(pc) * getV_GB(vc));
+    return ret / 2;
 }
-
 
 
 //==============================================================================
 //                 REALIZE ARTICULATED BODY VELOCITY CACHE
 //==============================================================================
 // Calculate velocity-related quantities that also depend on articulated body
-// inertias. This routine expects that coriolis accelerations, gyroscopic 
+// inertias. This routine expects that coriolis accelerations, gyroscopic
 // forces, and articulated body inertias are already available.
 // As written, the calling order doesn't matter, but Ground's entries must
 // have been precalculated so don't call this on the Ground body.
 // Cost is 72 flops.
-void 
-RigidBodyNode::realizeArticulatedBodyVelocityCache
-   (const SBTreePositionCache&              pc,
-    const SBTreeVelocityCache&              vc,
-    const SBArticulatedBodyInertiaCache&    abc,
-    SBArticulatedBodyVelocityCache&         abvc) const
-{
+void RigidBodyNode::realizeArticulatedBodyVelocityCache(const SBTreePositionCache& pc,
+                                                        const SBTreeVelocityCache& vc,
+                                                        const SBArticulatedBodyInertiaCache& abc,
+                                                        SBArticulatedBodyVelocityCache& abvc) const {
     assert(nodeNum != 0); // Don't call this for Ground.
 
     // 72 flops (P*a + b)
     updArticulatedBodyCentrifugalForces(abvc) =
-        getP(abc)*getMobilizerCoriolisAcceleration(vc) + getGyroscopicForce(vc);
+        getP(abc) * getMobilizerCoriolisAcceleration(vc) + getGyroscopicForce(vc);
 }
-
 
 
 //==============================================================================
 //                      CALC COMPOSITE BODY INERTIAS
 //==============================================================================
-// Given only position-related quantities from the State 
+// Given only position-related quantities from the State
 //      Mk_G  (this body's spatial inertia matrix, exp. in Ground)
 //      Phi   (composite body child-to-parent shift matrix)
 // calculate the inverse dynamics quantity
@@ -228,16 +347,13 @@ RigidBodyNode::realizeArticulatedBodyVelocityCache
 // the joint so can be implemented here rather than in RigidBodyNodeSpec.
 // Ground should override this implementation though.
 // Cost is about 80 flops.
-void
-RigidBodyNode::calcCompositeBodyInertiasInward(
-    const SBTreePositionCache&  pc,
-    Array_<SpatialInertia,MobilizedBodyIndex>& allR) const
-{
+void RigidBodyNode::calcCompositeBodyInertiasInward(const SBTreePositionCache& pc,
+                                                    Array_<SpatialInertia, MobilizedBodyIndex>& allR) const {
     SpatialInertia& R = toB(allR);
     R = getMk_G(pc);
-    for (unsigned i=0; i<children.size(); ++i) {
-        const SpatialInertia& RChild  = children[i]->fromB(allR);
-        const PhiMatrix&  phiChild    = children[i]->getPhi(pc);
+    for (unsigned i = 0; i < children.size(); ++i) {
+        const SpatialInertia& RChild = children[i]->fromB(allR);
+        const PhiMatrix& phiChild = children[i]->getPhi(pc);
         R += RChild.shift(-phiChild.l()); // ~80 flops
     }
 }

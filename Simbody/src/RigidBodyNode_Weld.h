@@ -1,15 +1,12 @@
 #pragma once
 
-#include "MobilizedBodyImpl.h"
 #include "RigidBodyNode.h"
-#include "SimbodyMatterSubsystemRep.h"
-
 
 ////////////////////////////////////////////////
 // Define classes derived from RigidBodyNode. //
 ////////////////////////////////////////////////
 
-/**
+/**>
  * This still-abstract class is the common base for any MobilizedBody which
  * has no mobilities. Currently that is only the unique Ground body and
  * MobilizedBody::Weld, but it is conceivable that others could crop up.
@@ -25,7 +22,11 @@ class ImmobileRigidBodyNode : public RigidBodyNode {
                           const UIndex& uIx,
                           const USquaredIndex& usqIx,
                           const QIndex& qIx)
-        : RigidBodyNode(mProps_B, X_PF, X_BM, QDotIsAlwaysTheSameAsU, QuaternionIsNeverUsed) {
+        : RigidBodyNode(mProps_B,
+                        X_PF,
+                        X_BM,
+                        QDotHandling::QDotIsAlwaysTheSameAsU,
+                        QuaternionUse::QuaternionIsNeverUsed) {
         uIndex = uIx;
         uSqIndex = usqIx;
         qIndex = qIx;

@@ -58,7 +58,10 @@ using namespace SimTK;
 using RBNodePtrList = Array_<const RigidBodyNode*>;
 using SpatialVecList = Vector_<SpatialVec>;
 
-// using NodeVariant = std::variant<RBNodeLoneParticle, RBNodeWeld>;
+#include "RigidBodyNode_LoneParticle.h"
+#include "RigidBodyNode_Weld.h"
+
+using NodeVariant = std::variant<RBNodeLoneParticle, RBNodeWeld>;
 
 /*
  * A CoupledConstraintSet is a set of Simbody Constraints which must be

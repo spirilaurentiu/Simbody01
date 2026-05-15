@@ -29,12 +29,12 @@
  * Define the RigidBodyNode that implements a Cylinder mobilizer.
  */
 
-#include "SimbodyMatterSubsystemRep.h"
 #include "RigidBodyNode.h"
 #include "RigidBodyNodeSpec.h"
+#include "SimbodyMatterSubsystemRep.h"
 
 
-    // CYLINDER //
+// CYLINDER //
 
 // This is a "cylinder" joint, meaning one degree of rotational freedom
 // about a particular axis, and one degree of translational freedom
@@ -44,23 +44,31 @@
 // In addition, the origin points of M and F are separated only along the
 // z axis; i.e., they have the same x & y coords in the F frame. The two
 // generalized coordinates are the rotation and the translation, in that order.
-template<bool noX_MB, bool noR_PF>
+template <bool noX_MB, bool noR_PF>
 class RBNodeCylinder : public RigidBodyNodeSpec<2, false, noX_MB, noR_PF> {
-public:
+    public:
     typedef typename RigidBodyNodeSpec<2, false, noX_MB, noR_PF>::HType HType;
-    virtual const char* type() { return "cylinder"; }
+    virtual const char* type() {
+        return "cylinder";
+    }
 
     RBNodeCylinder(const MassProperties& mProps_B,
-                   const Transform&      X_PF,
-                   const Transform&      X_BM,
-                   bool                  isReversed,
-                   UIndex&               nextUSlot,
-                   USquaredIndex&        nextUSqSlot,
-                   QIndex&               nextQSlot)
-      : RigidBodyNodeSpec<2, false, noX_MB, noR_PF>(mProps_B,X_PF,X_BM,nextUSlot,nextUSqSlot,nextQSlot,
-                             RigidBodyNode::QDotIsAlwaysTheSameAsU, RigidBodyNode::QuaternionIsNeverUsed, isReversed)
-    {
-        this->updateSlots(nextUSlot,nextUSqSlot,nextQSlot);
+                   const Transform& X_PF,
+                   const Transform& X_BM,
+                   bool isReversed,
+                   UIndex& nextUSlot,
+                   USquaredIndex& nextUSqSlot,
+                   QIndex& nextQSlot)
+        : RigidBodyNodeSpec<2, false, noX_MB, noR_PF>(mProps_B,
+                                                      X_PF,
+                                                      X_BM,
+                                                      nextUSlot,
+                                                      nextUSqSlot,
+                                                      nextQSlot,
+                                                      RigidBodyNode::QDotHandling::QDotIsAlwaysTheSameAsU,
+                                                      RigidBodyNode::QuaternionUse::QuaternionIsNeverUsed,
+                                                      isReversed) {
+        this->updateSlots(nextUSlot, nextUSqSlot, nextQSlot);
     }
 
 
@@ -78,86 +86,79 @@ public:
         this->toQ(q)[1] = p_FM[2];
     }
 
-    void setUToFitAngularVelocityImpl(const SBStateDigest& sbs, const Vector&, const Vec3& w_FM, Vector& u) const {
+    void
+    setUToFitAngularVelocityImpl(const SBStateDigest& sbs, const Vector&, const Vec3& w_FM, Vector& u) const {
         // We can only represent an angular velocity along z with this joint.
         this->toU(u)[0] = w_FM[2];
     }
 
-    void setUToFitLinearVelocityImpl
-       (const SBStateDigest& sbs, const Vector&, const Vec3& v_FM, Vector& u) const
-    {
+    void
+    setUToFitLinearVelocityImpl(const SBStateDigest& sbs, const Vector&, const Vec3& v_FM, Vector& u) const {
         // Because the M and F origins must lie along their shared z axis, there is no way to
         // create a linear velocity by rotating around z. So the only linear velocity we can represent
         // is that component which is along z.
         this->toU(u)[1] = v_FM[2];
     }
 
-    enum {CosQ=0, SinQ=1};
+    enum {
+        CosQ = 0,
+        SinQ = 1
+    };
     // We want space for cos(q0) and sin(q0).
-    int calcQPoolSize(const SBModelVars&) const
-    {   return 2; }
+    int calcQPoolSize(const SBModelVars&) const {
+        return 2;
+    }
 
     void performQPrecalculations(const SBStateDigest& sbs,
-                                 const Real* q,  int nq,
-                                 Real* qCache, int nQCache,
-                                 Real* qErr,     int nQErr) const
-    {
-        assert(q && nq==2 && qCache && nQCache==2 && nQErr==0);
+                                 const Real* q,
+                                 int nq,
+                                 Real* qCache,
+                                 int nQCache,
+                                 Real* qErr,
+                                 int nQErr) const {
+        assert(q && nq == 2 && qCache && nQCache == 2 && nQErr == 0);
         qCache[CosQ] = std::cos(q[0]);
         qCache[SinQ] = std::sin(q[0]);
     }
 
     void calcX_FM(const SBStateDigest& sbs,
-                  const Real* q,      int nq,
-                  const Real* qCache, int nQCache,
-                  Transform&  X_FM) const
-    {
-        assert(q && nq==2 && qCache && nQCache==2);
+                  const Real* q,
+                  int nq,
+                  const Real* qCache,
+                  int nQCache,
+                  Transform& X_FM) const {
+        assert(q && nq == 2 && qCache && nQCache == 2);
         X_FM.updR().setRotationFromAngleAboutZ(qCache[CosQ], qCache[SinQ]);
-        X_FM.updP() = Vec3(0,0,q[1]);
+        X_FM.updP() = Vec3(0, 0, q[1]);
     }
 
 
     // The generalized speeds are (1) the angular velocity of M in the F frame,
     // about F's z axis, expressed in F, and (2) the velocity of M's origin
     // in F, along F's z axis. (The z axis is also constant in M for this joint.)
-    void calcAcrossJointVelocityJacobian(
-        const SBStateDigest& sbs,
-        HType&               H_FM) const
-    {
-        H_FM(0) = SpatialVec( Vec3(0,0,1), Vec3(0)     );
-        H_FM(1) = SpatialVec( Vec3(0),     Vec3(0,0,1) );
+    void calcAcrossJointVelocityJacobian(const SBStateDigest& sbs, HType& H_FM) const {
+        H_FM(0) = SpatialVec(Vec3(0, 0, 1), Vec3(0));
+        H_FM(1) = SpatialVec(Vec3(0), Vec3(0, 0, 1));
     }
 
     // Since the Jacobian above is constant in F, its time derivative in F is zero.
-    void calcAcrossJointVelocityJacobianDot(
-        const SBStateDigest& sbs,
-        HType&               HDot_FM) const
-    {
-        HDot_FM(0) = SpatialVec( Vec3(0), Vec3(0) );
-        HDot_FM(1) = SpatialVec( Vec3(0), Vec3(0) );
+    void calcAcrossJointVelocityJacobianDot(const SBStateDigest& sbs, HType& HDot_FM) const {
+        HDot_FM(0) = SpatialVec(Vec3(0), Vec3(0));
+        HDot_FM(1) = SpatialVec(Vec3(0), Vec3(0));
     }
 
     // Override the computation of reverse-H for this simple mobilizer.
-    void calcReverseMobilizerH_FM(
-        const SBStateDigest& sbs,
-        HType&               H_FM) const
-    {
-        H_FM(0) = SpatialVec( Vec3(0,0,-1), Vec3(0)     );
-        H_FM(1) = SpatialVec( Vec3(0),      Vec3(0,0,-1) );
+    void calcReverseMobilizerH_FM(const SBStateDigest& sbs, HType& H_FM) const {
+        H_FM(0) = SpatialVec(Vec3(0, 0, -1), Vec3(0));
+        H_FM(1) = SpatialVec(Vec3(0), Vec3(0, 0, -1));
     }
 
     // Override the computation of reverse-HDot for this simple mobilizer.
-    void calcReverseMobilizerHDot_FM(
-        const SBStateDigest& sbs,
-        HType&               HDot_FM) const
-    {
-        HDot_FM(0) = SpatialVec( Vec3(0), Vec3(0) );
-        HDot_FM(1) = SpatialVec( Vec3(0), Vec3(0) );
+    void calcReverseMobilizerHDot_FM(const SBStateDigest& sbs, HType& HDot_FM) const {
+        HDot_FM(0) = SpatialVec(Vec3(0), Vec3(0));
+        HDot_FM(1) = SpatialVec(Vec3(0), Vec3(0));
     }
 };
 
 
-
 #endif // SimTK_SIMBODY_RIGID_BODY_NODE_SPEC_CYLINDER_H_
-

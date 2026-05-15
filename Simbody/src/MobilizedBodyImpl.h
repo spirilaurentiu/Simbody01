@@ -30,12 +30,15 @@
  * subclasses which represent the built-in body and mobilizer types.
  */
 
+#include <stdexcept>
+
 #include "simbody/internal/Body.h"
 #include "simbody/internal/MobilizedBody.h"
 #include "simbody/internal/MobilizedBody_BuiltIns.h"
 #include "simbody/internal/common.h"
 
 #include "BodyRep.h"
+#include "ExceptionMacros.h"
 #include "MotionImpl.h"
 #include "SimTKcommon.h"
 #include "SimbodyMatterSubsystemRep.h"
@@ -51,28 +54,10 @@ namespace SimTK {
 // This is what a MobilizedBody handle points to.
 class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBodyImpl> {
     public:
-    explicit MobilizedBodyImpl(MobilizedBody::Direction d)
-        : defaultLockLevel(Motion::NoLevel)
-        , reversed(d == MobilizedBody::Reverse)
-        , myMatterSubsystemRep(0)
-        , myLevel(-1)
-        , myRBnode(0)
-        , hasChildren(false) {
-    }
+    explicit MobilizedBodyImpl(MobilizedBody::Direction d);
+    MobilizedBodyImpl(const MobilizedBodyImpl& src);
 
-    void setDirection(MobilizedBody::Direction d) {
-        const bool wantReversed = (d == MobilizedBody::Reverse);
-        if (wantReversed != reversed) {
-            invalidateTopologyCache();
-            reversed = wantReversed;
-        }
-    }
-
-    MobilizedBodyImpl(const MobilizedBodyImpl& src) {
-        *this = src;
-        myRBnode = 0;
-    }
-
+    void setDirection(MobilizedBody::Direction d);
 
     void lock(State& state, Motion::Level level) const;
     void lockDofs(State& state, bool first, bool second, bool third) const;
@@ -80,13 +65,8 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
     void unlock(State& state) const;
     Motion::Level getLockLevel(const State& state) const;
     Vector getLockValueAsVector(const State& state) const;
-    void lockByDefault(Motion::Level level) {
-        invalidateTopologyCache();
-        defaultLockLevel = level;
-    }
-    Motion::Level getLockByDefaultLevel() const {
-        return defaultLockLevel;
-    }
+    void lockByDefault(Motion::Level level);
+    Motion::Level getLockByDefaultLevel() const;
 
     // The matter subsystem must issue these MobilizedBody realize() calls in base-to-tip
     // order, because these methods are allowed to assume that their parent (and
@@ -142,104 +122,85 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
 
     virtual void
     calcDecorativeGeometryAndAppendImpl(const State& s, Stage stage, Array_<DecorativeGeometry>& geom) const {
-        if (stage != Stage::Instance || !getMyMatterSubsystemRep().getShowDefaultGeometry()) {
-            return;
-        }
-        const Real scale = 1;
-        DecorativeFrame axes(scale / 2);
-        axes.setLineThickness(2);
-        axes.setBodyId(myMobilizedBodyIndex);
-        geom.push_back(axes); // the body frame
+        throw std::runtime_error("calcDecorativeGeometryAndAppendImpl() not implemented");
+        // if (stage != Stage::Instance || !getMyMatterSubsystemRep().getShowDefaultGeometry()) {
+        //     return;
+        // }
+        // const Real scale = 1;
+        // DecorativeFrame axes(scale / 2);
+        // axes.setLineThickness(2);
+        // axes.setBodyId(myMobilizedBodyIndex);
+        // geom.push_back(axes); // the body frame
 
-        // Display the inboard joint frame (at half size), unless it is the
-        // same as the body frame. Then find the corresponding frame on the
-        // parent and display that in this body's color.
-        if (myMobilizedBodyIndex != 0) {
-            const Real pscale = 1;
-            const Transform& X_BM = getDefaultOutboardFrame(); // TODO: get from state
-            if (X_BM.p() != Vec3(0) || X_BM.R() != Mat33(1)) {
-                DecorativeFrame frameOnChild(scale / 4);
-                frameOnChild.setBodyId(myMobilizedBodyIndex);
-                frameOnChild.setColor(Red);
-                frameOnChild.setTransform(X_BM);
-                geom.push_back(frameOnChild);
-                if (X_BM.p() != Vec3(0)) {
-                    geom.push_back(DecorativeLine(Vec3(0), X_BM.p()).setBodyId(myMobilizedBodyIndex));
-                }
-            }
-            const Transform& X_PF = getDefaultInboardFrame();  // TODO: from state
-            DecorativeFrame frameOnParent(pscale * Real(0.3)); // slightly larger than child
-            frameOnParent.setBodyId(myParentIndex);
-            frameOnParent.setColor(Blue);
-            frameOnParent.setTransform(X_PF);
-            geom.push_back(frameOnParent);
-            if (X_PF.p() != Vec3(0)) {
-                geom.push_back(DecorativeLine(Vec3(0), X_PF.p()).setBodyId(myParentIndex));
-            }
-        }
+        // // Display the inboard joint frame (at half size), unless it is the
+        // // same as the body frame. Then find the corresponding frame on the
+        // // parent and display that in this body's color.
+        // if (myMobilizedBodyIndex != 0) {
+        //     const Real pscale = 1;
+        //     const Transform& X_BM = getDefaultOutboardFrame(); // TODO: get from state
+        //     if (X_BM.p() != Vec3(0) || X_BM.R() != Mat33(1)) {
+        //         DecorativeFrame frameOnChild(scale / 4);
+        //         frameOnChild.setBodyId(myMobilizedBodyIndex);
+        //         frameOnChild.setColor(Red);
+        //         frameOnChild.setTransform(X_BM);
+        //         geom.push_back(frameOnChild);
+        //         if (X_BM.p() != Vec3(0)) {
+        //             geom.push_back(DecorativeLine(Vec3(0), X_BM.p()).setBodyId(myMobilizedBodyIndex));
+        //         }
+        //     }
+        //     const Transform& X_PF = getDefaultInboardFrame();  // TODO: from state
+        //     DecorativeFrame frameOnParent(pscale * Real(0.3)); // slightly larger than child
+        //     frameOnParent.setBodyId(myParentIndex);
+        //     frameOnParent.setColor(Blue);
+        //     frameOnParent.setTransform(X_PF);
+        //     geom.push_back(frameOnParent);
+        //     if (X_PF.p() != Vec3(0)) {
+        //         geom.push_back(DecorativeLine(Vec3(0), X_PF.p()).setBodyId(myParentIndex));
+        //     }
+        // }
 
-        // Put a little purple wireframe sphere at the COM, and add a line from
-        // body origin to the com.
+        // // Put a little purple wireframe sphere at the COM, and add a line from
+        // // body origin to the com.
 
-        DecorativeSphere com(scale * Real(.05));
-        com.setBodyId(myMobilizedBodyIndex);
-        com.setColor(Purple).setRepresentation(DecorativeGeometry::DrawPoints);
-        const Vec3& comPos_B =
-            theBody.getDefaultRigidBodyMassProperties().getMassCenter(); // TODO: from state
-        com.setTransform(comPos_B);
-        geom.push_back(com);
-        if (comPos_B != Vec3(0)) {
-            geom.push_back(DecorativeLine(Vec3(0), comPos_B).setBodyId(myMobilizedBodyIndex));
-        }
+        // DecorativeSphere com(scale * Real(.05));
+        // com.setBodyId(myMobilizedBodyIndex);
+        // com.setColor(Purple).setRepresentation(DecorativeGeometry::DrawPoints);
+        // const Vec3& comPos_B =
+        //     theBody.getDefaultRigidBodyMassProperties().getMassCenter(); // TODO: from state
+        // com.setTransform(comPos_B);
+        // geom.push_back(com);
+        // if (comPos_B != Vec3(0)) {
+        //     geom.push_back(DecorativeLine(Vec3(0), comPos_B).setBodyId(myMobilizedBodyIndex));
+        // }
     }
 
     void
     calcDecorativeGeometryAndAppend(const State& s, Stage stage, Array_<DecorativeGeometry>& geom) const {
-        // We know how to deal with the topological (construction) geometry
-        // here. For bodies we can just draw it at topology stage. For mobilizers,
-        // we might not know the placement of the mobilizer frames on the parent
-        // and child bodies until Instance stage, at which point we can transform
-        // and then draw the topological geometry.
-        if (stage == Stage::Topology) {
-            appendTopologicalBodyGeometry(geom);
-        } else if (stage == Stage::Instance) {
-            const SimbodyMatterSubsystemRep& matterRep = getMyMatterSubsystemRep();
-            const Transform& X_PF = getInboardFrame(s);
-            const Transform& X_BM = getOutboardFrame(s);
-            appendTopologicalMobilizerGeometry(X_BM, X_PF, geom);
-        }
+        throw std::runtime_error("calcDecorativeGeometryAndAppend() not implemented");
 
-        // Let the individual mobilizer deal with any complicated stuff.
-        calcDecorativeGeometryAndAppendImpl(s, stage, geom);
+        // // We know how to deal with the topological (construction) geometry
+        // // here. For bodies we can just draw it at topology stage. For mobilizers,
+        // // we might not know the placement of the mobilizer frames on the parent
+        // // and child bodies until Instance stage, at which point we can transform
+        // // and then draw the topological geometry.
+        // if (stage == Stage::Topology) {
+        //     appendTopologicalBodyGeometry(geom);
+        // } else if (stage == Stage::Instance) {
+        //     const SimbodyMatterSubsystemRep& matterRep = getMyMatterSubsystemRep();
+        //     const Transform& X_PF = getInboardFrame(s);
+        //     const Transform& X_BM = getOutboardFrame(s);
+        //     appendTopologicalMobilizerGeometry(X_BM, X_PF, geom);
+        // }
+
+        // // Let the individual mobilizer deal with any complicated stuff.
+        // calcDecorativeGeometryAndAppendImpl(s, stage, geom);
     }
 
-    int addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g) {
-        const int nxt = (int)outboardGeometry.size();
-        outboardGeometry.push_back(g); // make a new copy
-        // Combine the placement frame and the transform already in the geometry
-        // so we end up with geometry expressed directly in the M frame.
-        outboardGeometry.back().setTransform(X_MD * g.getTransform());
-        // Record the assigned ordinal (not in the same ordinal space as
-        // body decorations).
-        outboardGeometry.back().setIndexOnBody(nxt);
-        return nxt;
-    }
-    int addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g) {
-        const int nxt = (int)inboardGeometry.size();
-        inboardGeometry.push_back(g); // make a new copy
-        // Combine the placement frame and the transform already in the geometry
-        // so we end up with geometry expressed directly in the F frame.
-        inboardGeometry.back().setTransform(X_FD * g.getTransform());
-        // Record the assigned ordinal (not in the same ordinal space as
-        // body decorations).
-        inboardGeometry.back().setIndexOnBody(nxt);
-        return nxt;
-    }
-
+    int addOutboardDecoration(const Transform& X_MD, const DecorativeGeometry& g);
+    int addInboardDecoration(const Transform& X_FD, const DecorativeGeometry& g);
 
     void findMobilizerQs(const State&, QIndex& qStart, int& nq) const;
     void findMobilizerUs(const State&, UIndex& uStart, int& nu) const;
-
 
     Motion::Method getQMotionMethod(const State&) const;
     Motion::Method getUMotionMethod(const State&) const;
@@ -258,7 +219,6 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
     // Generic State-access routines (that is, those which can be handled in
     // the MobilizedBody base class).
 
-
     // Invalidate Stage::Position.
     void setQToFitTransform(State& s, const Transform& X_FM) const;
     void setQToFitRotation(State& s, const Rotation& R_FM) const;
@@ -269,227 +229,63 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
     void setUToFitAngularVelocity(State& s, const Vec3& w_FM) const;
     void setUToFitLinearVelocity(State& s, const Vec3& v_FM) const;
 
-    const MassProperties& getBodyMassProperties(const State& s) const {
-        // TODO: these should come from the state if the body has variable mass props
-        const SBInstanceVars& iv = getMyMatterSubsystemRep().getInstanceVars(s);
-        return getMyRigidBodyNode().getMassProperties_OB_B();
-    }
+    const MassProperties& getBodyMassProperties(const State& s) const;
+    const SpatialInertia& getBodySpatialInertiaInGround(const State& s) const;
+    const Transform& getInboardFrame(const State& s) const;
+    const Transform& getOutboardFrame(const State& s) const;
+    void setInboardFrame(State& s, const Transform& X_PF) const;
+    void setOutboardFrame(State& s, const Transform& X_BM) const;
+    const Transform& getBodyTransform(const State& s) const;
+    const SpatialVec& getBodyVelocity(const State& s) const;
+    const SpatialVec& getBodyAcceleration(const State& s) const;
+    const Transform& getMobilizerTransform(const State& s) const;
+    const SpatialVec& getMobilizerVelocity(const State& s) const;
 
-    const SpatialInertia& getBodySpatialInertiaInGround(const State& s) const {
-        const SBTreePositionCache& tpc = getMyMatterSubsystemRep().getTreePositionCache(s);
-        return getMyRigidBodyNode().getMk_G(tpc);
-    }
+    SpatialVec getHCol(const State& s, MobilizerUIndex ux) const;
+    SpatialVec getH_FMCol(const State& s, MobilizerUIndex ux) const;
 
-    const Transform& getInboardFrame(const State& s) const {
-        // TODO: these should come from the state if the mobilizer has variable frames
-        const SBInstanceVars& iv = getMyMatterSubsystemRep().getInstanceVars(s);
-        return getMyRigidBodyNode().getX_PF();
-    }
-    const Transform& getOutboardFrame(const State& s) const {
-        // TODO: these should come from the state if the mobilizer has variable frames
-        const SBInstanceVars& iv = getMyMatterSubsystemRep().getInstanceVars(s);
-        return getMyRigidBodyNode().getX_BM();
-    }
-
-    void setInboardFrame(State& s, const Transform& X_PF) const {
-        assert(!"setInboardFrame(s) not implemented yet");
-    }
-    void setOutboardFrame(State& s, const Transform& X_BM) const {
-        assert(!"setOutboardFrame(s) not implemented yet");
-    }
-
-    const Transform& getBodyTransform(const State& s) const {
-        const SBTreePositionCache& pc = getMyMatterSubsystemRep().getTreePositionCache(s);
-        return getMyRigidBodyNode().getX_GB(pc);
-    }
-    const SpatialVec& getBodyVelocity(const State& s) const {
-        const SBTreeVelocityCache& vc = getMyMatterSubsystemRep().getTreeVelocityCache(s);
-        return getMyRigidBodyNode().getV_GB(vc);
-    }
-    const SpatialVec& getBodyAcceleration(const State& s) const {
-        const SBTreeAccelerationCache& ac = getMyMatterSubsystemRep().getTreeAccelerationCache(s);
-        return getMyRigidBodyNode().getA_GB(ac);
-    }
-
-    const Transform& getMobilizerTransform(const State& s) const {
-        const SBTreePositionCache& pc = getMyMatterSubsystemRep().getTreePositionCache(s);
-        return getMyRigidBodyNode().getX_FM(pc);
-    }
-    const SpatialVec& getMobilizerVelocity(const State& s) const {
-        const SBTreeVelocityCache& vc = getMyMatterSubsystemRep().getTreeVelocityCache(s);
-        return getMyRigidBodyNode().getV_FM(vc);
-    }
-
-    SpatialVec getHCol(const State& s, MobilizerUIndex ux) const {
-        const SBTreePositionCache& pc = getMyMatterSubsystemRep().getTreePositionCache(s);
-        return getMyRigidBodyNode().getHCol(pc, ux);
-    }
-
-    SpatialVec getH_FMCol(const State& s, MobilizerUIndex ux) const {
-        const SBTreePositionCache& pc = getMyMatterSubsystemRep().getTreePositionCache(s);
-        return getMyRigidBodyNode().getH_FMCol(pc, ux);
-    }
-
-    void invalidateTopologyCache() const {
-        delete myRBnode;
-        myRBnode = 0;
-        if (myMatterSubsystemRep) {
-            myMatterSubsystemRep->invalidateSubsystemTopologyCache();
-        }
-    }
+    void invalidateTopologyCache() const;
 
     // This might get called *during* realizeTopology() so just make sure there is
     // a node here without checking whether we're done with realizeTopology().
-    const RigidBodyNode& getMyRigidBodyNode() const {
-        SimTK_ASSERT(myRBnode && myMatterSubsystemRep,
-                     "An operation on a MobilizedBody was illegal because realizeTopology() has "
-                     "not been performed on the containing Subsystem since the last topological change.");
-        return *myRBnode;
-    }
+    const RigidBodyNode& getMyRigidBodyNode() const;
 
-    const Body& getBody() const {
-        return theBody;
-    }
-    const Transform& getDefaultInboardFrame() const {
-        return defaultInboardFrame;
-    }
-    const Transform& getDefaultOutboardFrame() const {
-        return defaultOutboardFrame;
-    }
-    const MassProperties& getDefaultRigidBodyMassProperties() const {
-        return theBody.getDefaultRigidBodyMassProperties();
-    }
+    const Body& getBody() const;
+    const Transform& getDefaultInboardFrame() const;
+    const Transform& getDefaultOutboardFrame() const;
+    const MassProperties& getDefaultRigidBodyMassProperties() const;
+    bool isReversed() const;
 
-    bool isReversed() const {
-        return reversed;
-    }
+    void adoptMotion(Motion& ownerHandle);
+    void clearMotion();
+    bool hasMotion() const;
+    const Motion& getMotion() const;
 
-    void adoptMotion(Motion& ownerHandle) {
-        SimTK_ERRCHK(!hasMotion(),
-                     "MobilizedBody::adoptMotion()",
-                     "This MobilizedBody already has a Motion object associated with it.\n"
-                     "Use clearMotion() first to replace an existing Motion object.");
-        ownerHandle.disown(motion); // transfer ownership to handle "motion"
-        invalidateTopologyCache();
+    const SimbodyMatterSubsystem& getMySimbodyMatterSubsystem() const;
+    const SimbodyMatterSubsystemRep& getMyMatterSubsystemRep() const;
+    SimbodyMatterSubsystemRep& updMyMatterSubsystemRep();
 
-        // Tell the Motion that it belongs to this MobilizedBody.
-        motion.updImpl().setMobilizedBodyImpl(this);
-    }
+    const SBModelPerMobodInfo& getMyModelInfo(const State& s) const;
+    const SBInstancePerMobodInfo& getMyInstanceInfo(const State& s) const;
 
-    void clearMotion() {
-        motion.clearHandle();
-        invalidateTopologyCache();
-    }
+    const MobilizedBody& getMyHandle() const;
+    MobilizedBody& updMyHandle();
 
-    bool hasMotion() const {
-        return !motion.isEmptyHandle();
-    }
+    MobilizedBodyIndex getMyMobilizedBodyIndex() const;
+    MobilizedBodyIndex getMyParentMobilizedBodyIndex() const;
+    MobilizedBodyIndex getMyBaseBodyMobilizedBodyIndex() const;
 
-    const Motion& getMotion() const {
-        SimTK_ERRCHK(!motion.isEmptyHandle(),
-                     "MobilizedBody::getMotion()",
-                     "There is no Motion object associated with this MobilizedBody.");
-        return motion;
-    }
-
-    const SimbodyMatterSubsystem& getMySimbodyMatterSubsystem() const {
-        return getMyMatterSubsystemRep().getMySimbodyMatterSubsystemHandle();
-    }
-
-    const SimbodyMatterSubsystemRep& getMyMatterSubsystemRep() const {
-        SimTK_ASSERT(myMatterSubsystemRep,
-                     "An operation was illegal because a MobilizedBody was not in a Subsystem.");
-        return *myMatterSubsystemRep;
-    }
-    SimbodyMatterSubsystemRep& updMyMatterSubsystemRep() {
-        SimTK_ASSERT(myMatterSubsystemRep,
-                     "An operation was illegal because a MobilizedBody was not in a Subsystem.");
-        return *myMatterSubsystemRep;
-    }
-
-    const SBModelPerMobodInfo& getMyModelInfo(const State& s) const {
-        const SimbodyMatterSubsystemRep& matterRep = getMyMatterSubsystemRep();
-        const SBModelCache& mc = matterRep.getModelCache(s);
-        const SBModelPerMobodInfo& info = mc.getMobodModelInfo(myMobilizedBodyIndex);
-        return info;
-    }
-
-    const SBInstancePerMobodInfo& getMyInstanceInfo(const State& s) const {
-        const SimbodyMatterSubsystemRep& matterRep = getMyMatterSubsystemRep();
-        const SBInstanceCache& ic = matterRep.getInstanceCache(s);
-        const SBInstancePerMobodInfo& info = ic.getMobodInstanceInfo(myMobilizedBodyIndex);
-        return info;
-    }
-
-    const MobilizedBody& getMyHandle() const {
-        const MobilizedBody& mobod = getMyMatterSubsystemRep().getMobilizedBody(getMyMobilizedBodyIndex());
-        SimTK_ASSERT(&mobod.getImpl() == this,
-                     "A MobilizedBodyImpl's handle didn't refer back to the same Impl!");
-        return mobod;
-    }
-
-    MobilizedBody& updMyHandle() {
-        MobilizedBody& mobod = updMyMatterSubsystemRep().updMobilizedBody(getMyMobilizedBodyIndex());
-        SimTK_ASSERT(&mobod.getImpl() == this,
-                     "A MobilizedBodyImpl's handle didn't refer back to the same Impl!");
-        return mobod;
-    }
-
-    MobilizedBodyIndex getMyMobilizedBodyIndex() const {
-        assert(myMobilizedBodyIndex.isValid());
-        return myMobilizedBodyIndex;
-    }
-
-    MobilizedBodyIndex getMyParentMobilizedBodyIndex() const {
-        assert(myParentIndex.isValid());
-        return myParentIndex;
-    }
-
-    MobilizedBodyIndex getMyBaseBodyMobilizedBodyIndex() const {
-        assert(myBaseBodyIndex.isValid());
-        return myBaseBodyIndex;
-    }
-
-    int getMyLevel() const {
-        assert(myLevel >= 0);
-        return myLevel;
-    }
-
-    bool isInSubsystem() const {
-        return myMatterSubsystemRep != 0;
-    }
+    int getMyLevel() const;
+    bool isInSubsystem() const;
 
     void setMyMatterSubsystem(SimbodyMatterSubsystem& matter,
                               MobilizedBodyIndex parentIndex,
-                              MobilizedBodyIndex index) {
-        // If the subsystem is already set it must be the same one.
-        assert(!myMatterSubsystemRep || myMatterSubsystemRep == &matter.getRep());
-        myMatterSubsystemRep = &matter.updRep();
-
-        assert(index.isValid());
-        assert(parentIndex.isValid() || index == GroundIndex);
-
-        myParentIndex = parentIndex; // invalid if this is Ground
-        myMobilizedBodyIndex = index;
-
-        if (index != GroundIndex) {
-            MobilizedBody& parent = matter.updMobilizedBody(parentIndex);
-            myLevel = parent.getLevelInMultibodyTree() + 1;
-            myBaseBodyIndex =
-                (myLevel == 1 ? myMobilizedBodyIndex : parent.getBaseMobilizedBody().getMobilizedBodyIndex());
-            parent.updImpl().hasChildren = true;
-        } else {
-            myLevel = 0;
-            myBaseBodyIndex = GroundIndex;
-        }
-    }
+                              MobilizedBodyIndex index);
 
     private:
     // Body topological geometry is defined with respect to the body frame so we
     // can draw it right away.
-    void appendTopologicalBodyGeometry(Array_<DecorativeGeometry>& geom) const {
-        getBody().getRep().appendDecorativeGeometry(getMyMobilizedBodyIndex(), geom);
-    }
+    void appendTopologicalBodyGeometry(Array_<DecorativeGeometry>& geom) const;
 
     // Mobilizer topological geometry is defined with respect to the M (outboard, child)
     // frame and the F (inboard, parent) frame. The placement of those frames with
@@ -498,22 +294,8 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
     // here.
     void appendTopologicalMobilizerGeometry(const Transform& X_BM,
                                             const Transform& X_PF,
-                                            Array_<DecorativeGeometry>& geom) const {
-        for (int i = 0; i < (int)outboardGeometry.size(); ++i) {
-            geom.push_back(outboardGeometry[i]);
-            geom.back()
-                .setBodyId(getMyMobilizedBodyIndex())
-                .setTransform(X_BM * outboardGeometry[i].getTransform());
-        }
-        for (int i = 0; i < (int)inboardGeometry.size(); ++i) {
-            geom.push_back(inboardGeometry[i]);
-            geom.back()
-                .setBodyId(getMyParentMobilizedBodyIndex())
-                .setTransform(X_PF * inboardGeometry[i].getTransform());
-        }
-    }
+                                            Array_<DecorativeGeometry>& geom) const;
 
-    private:
     friend class MobilizedBody;
 
     // TOPOLOGY "STATE"
@@ -541,8 +323,8 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
 
     bool reversed; // is the mobilizer defined from M to F?
 
-    Array_<DecorativeGeometry> outboardGeometry;
-    Array_<DecorativeGeometry> inboardGeometry;
+    // Array_<DecorativeGeometry> outboardGeometry;
+    // Array_<DecorativeGeometry> inboardGeometry;
 
     // These data members are filled in once the MobilizedBody is added to
     // a MatterSubsystem. Note that this pointer is just a reference to
@@ -572,6 +354,7 @@ class MobilizedBodyImpl : public PIMPLImplementation<MobilizedBody, MobilizedBod
     // Keep track of whether this body has any children.
     bool hasChildren;
 };
+
 
 class MobilizedBody::PinImpl : public MobilizedBodyImpl {
     public:

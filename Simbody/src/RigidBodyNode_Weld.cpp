@@ -31,7 +31,9 @@
  * is problematic there. Also, these can have very efficient
  * implementations here since they know they have no dofs.
  */
-#include "RigidBodyNode_Weld.hpp"
+#include "RigidBodyNode_Weld.h"
+
+#include "MobilizedBodyImpl.h"
 
 // The Ground node is special because it doesn't need a mobilizer.
 /*static*/ RigidBodyNode* RigidBodyNode::createGroundNode() {
